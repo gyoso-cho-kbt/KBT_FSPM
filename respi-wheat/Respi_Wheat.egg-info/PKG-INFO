@@ -1,0 +1,12 @@
+Metadata-Version: 1.1
+Name: Respi-Wheat
+Version: 2.0
+Summary: Model of respiration adapted to wheat 
+Home-page: https://sourcesup.renater.fr/projects/respi-wheat/
+Author: C.Chambon, R.Barillot
+Author-email: camille.chambon@inra.fr, romain.barillot@inra.fr
+License: CeCILL-C
+Download-URL: https://sourcesup.renater.fr/frs/download.php/latestzip/2087/Respi-Wheat-Stable-latest.zip
+Description: Model of respiration adapted to the main physiological processes of wheat. Adapted from Cannell et Thornley (2000).
+Keywords: respiration model
+Platform: UNKNOWN

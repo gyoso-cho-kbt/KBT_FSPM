@@ -1,0 +1,12 @@
+Metadata-Version: 1.1
+Name: Farquhar-Wheat
+Version: 2.0
+Summary: Farqhuar model of wheat photosynthesis
+Home-page: https://sourcesup.renater.fr/projects/farquhar-wheat/
+Author: C.Chambon, R.Barillot
+Author-email: camille.chambon@inra.fr, romain.barillot@inra.fr
+License: CeCILL-C
+Download-URL: https://sourcesup.renater.fr/frs/download.php/latestfile/1737/farquhar-wheat_BreedWheat.zip
+Description: Farqhuar model of wheat photosynthesis
+Keywords: photosynthesis,Farquhar,stomatal conductance,light,CO2,temperature,transpiration
+Platform: UNKNOWN

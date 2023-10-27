@@ -1,0 +1,12 @@
+Metadata-Version: 1.1
+Name: Senesc-Wheat
+Version: 2.0
+Summary: Model of senescence adapted to wheat
+Home-page: https://sourcesup.renater.fr/projects/senesc-wheat/
+Author: M.Gauthier, C.Chambon, R.Barillot
+Author-email: camille.chambon@inra.fr, romain.barillot@inra.fr
+License: CeCILL-C
+Download-URL: https://sourcesup.renater.fr/frs/download.php/latestfile/1923/senesc-wheat_BreedWheat.zip
+Description: Model of senescence adapted to wheat
+Keywords: senescence,tissue death,trophic regulation,green area,leaf,roots,nitrogen,remobilisation
+Platform: UNKNOWN

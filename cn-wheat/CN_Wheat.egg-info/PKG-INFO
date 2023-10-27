@@ -1,0 +1,14 @@
+Metadata-Version: 1.1
+Name: CN-Wheat
+Version: 3.0
+Summary: CN-Wheat is a model of CN distribution for wheat
+Home-page: https://sourcesup.renater.fr/projects/cn-wheat/
+Author: R.Barillot, C.Chambon, M.Gauthier and B.Andrieu
+Author-email: romain.barillot@inrae.fr, camille.chambon@inrae.fr, bruno.andrieu@inrae.fr, marion.gauthier@inrae.fr
+License: CeCILL-C
+Download-URL: https://sourcesup.renater.fr/frs/download.php/latestzip/2088/CN-Wheat-Stable-latest.zip
+Description: CN-Wheat is a Functional-Structural Plant Model which 
+        simulates the distribution of carbon and nitrogen into wheat culms in relation 
+        to photosynthesis, N uptake, metabolite turnover, root exudation and tissue death.
+Keywords: functional-structural plant model,wheat,ode,system integration,scipy,trophic status,carbon,nitrogen,metabolism,remobilisation,source-sink relation,resource allocation
+Platform: UNKNOWN
