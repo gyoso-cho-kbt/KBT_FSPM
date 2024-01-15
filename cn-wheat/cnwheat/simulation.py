@@ -665,7 +665,7 @@ class Simulation(object):
                 raise SimulationRunError(message)
                            
                            
-            print('[cn-simulation] {}-{}: {}'.format(self.population.plants[0].axes[0].grains.__class__.PARAMETERS.FILLING_INIT, self.population.plants[0].axes[0].grains.__class__.PARAMETERS.FILLING_END, self.population.plants[0].axes[0].grains.age_from_flowering))
+            # print('[cn-simulation] {}-{}: {}'.format(self.population.plants[0].axes[0].grains.__class__.PARAMETERS.FILLING_INIT, self.population.plants[0].axes[0].grains.__class__.PARAMETERS.FILLING_END, self.population.plants[0].axes[0].grains.age_from_flowering))
             # Re-compute integrative variables
             self.population.calculate_aggregated_variables()           
             if logger.isEnabledFor(logging.DEBUG):
@@ -965,9 +965,6 @@ class Simulation(object):
                             element.proteins = y[self.initial_conditions_mapping[element]['proteins']]
                             element.cytokinins = y[self.initial_conditions_mapping[element]['cytokinins']]
                             
-                            ############################### added by zhao for asobi computation ###########################################
-                            # element.water = y[self.initial_conditions_mapping[element]['water']]
-                            ###############################################################################################################
 
                             # intermediate variables
                             element.Photosynthesis = element.calculate_total_Photosynthesis(element.Ag, element.green_area)
@@ -1001,11 +998,6 @@ class Simulation(object):
                             element.D_Proteins = element.calculate_D_Proteins(element.proteins, element.cytokinins, plant.T_effect_Vmax)
                             element.cytokinins_import = element.calculate_cytokinins_import(axis.roots.Export_cytokinins, element.Transpiration, axis.Total_Transpiration)
                             element.D_cytokinins = element.calculate_D_cytokinins(element.cytokinins, plant.T_effect_Vmax)
-                   
-                            ############################### added by zhao for asobi computation ###########################################
-                            # element.water = element.calculate_water_concentration(element.water)
-                            ###############################################################################################################
-                   
 
                             # compartments derivatives
                             starch_derivative = element.calculate_starch_derivative(element.S_Starch, element.D_Starch)
@@ -1023,9 +1015,6 @@ class Simulation(object):
                             proteins_derivative = element.calculate_proteins_derivative(element.S_Proteins, element.D_Proteins)
                             cytokinins_derivative = element.calculate_cytokinins_derivative(element.cytokinins_import, element.D_cytokinins)
                             
-                            ############################### added by zhao for asobi computation ###########################################
-                            # water_derivative = element.calculate_water_derivative(element.sucrose)
-                            ###############################################################################################################
 
                             y_derivatives[self.initial_conditions_mapping[element]['starch']] = starch_derivative
                             y_derivatives[self.initial_conditions_mapping[element]['sucrose']] = sucrose_derivative
@@ -1036,9 +1025,6 @@ class Simulation(object):
                             y_derivatives[self.initial_conditions_mapping[element]['proteins']] = proteins_derivative
                             y_derivatives[self.initial_conditions_mapping[element]['cytokinins']] = cytokinins_derivative
                             
-                            ############################### added by zhao for asobi computation ###########################################
-                            # y_derivatives[self.initial_conditions_mapping[element]['water']] = water_derivative
-                            ###############################################################################################################
 
                     if phytomer.hiddenzone is not None:
                         # Unloading of sucrose from phloem

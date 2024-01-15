@@ -120,11 +120,18 @@ Ci_A = 1.37  # factor in Ci calculation. Comes from (1.6)^(2/3)
 #     * deltaS: entropy term (kJ mol-1 K-1)
 #     * Tref: reference temperature (K)
 
+# zhao memo:
+# the original Ac value is 86.5056 at 25 degree
+# the settings corresponding to ratio 1.313 at 32.799 degree
+# vars(farquhar_pars)['PARAM_TEMP']['deltaHa']['Vc_max'] = 89.7 + 26 # 89.7 activation enthalpie offset:peak = 3:1
+# vars(farquhar_pars)['PARAM_TEMP']['deltaHd']['Vc_max'] = 149.3 + 3 # 149.3 offset:peak = 1:2
+
 PARAM_TEMP = {'deltaHa': {'Vc_max': 89.7, 'Jmax': 48.9, 'TPU': 47., 'Kc': 79.43, 'Ko': 36.38, 'Gamma': 35., 'Rdark': 46.39},
               'deltaHd': {'Vc_max': 149.3, 'Jmax': 152.3, 'TPU': 152.3},
               'deltaS': {'Vc_max': 0.486, 'Jmax': 0.495, 'TPU': 0.495}, 'Tref': 298.15} # 298.15 is the kalvin degree for 25 celsius degree
 
-DELTA_CONVERGENCE = 0.01  #: The relative delta for Ci and Ts convergence.
+# DELTA_CONVERGENCE = 0.01  #: The relative delta for Ci and Ts convergence.
+DELTA_CONVERGENCE = 0.000001 # zhao: use stricter convergence threshold
 
 # -- Inhibition of the photosynthesis by carbohydrates (from Azcon-Bieto 1983)
 WSC_min = 100000  # Surfacic WSC content above which inhibition of the photosynthesis by WSC occures (µmol C m-2)

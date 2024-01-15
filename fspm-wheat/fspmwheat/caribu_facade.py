@@ -60,6 +60,11 @@ class CaribuFacade(object):
         self._geometrical_model = geometrical_model  #: the model which deals with geometry
         self._alea_canopy = pd.DataFrame()  #: alea table to generate the heterogeneous canopy
         self._update_shared_df = update_shared_df
+        
+        ############### added by zhao ###########################
+        self._c_scene_sky = None
+        self._c_scene_sun = None
+        #########################################################
 
     def run(self, run_caribu, sun_sky_option='mix', energy=1, DOY=1, hourTU=12, latitude=48.85, diffuse_model='soc', azimuts=4, zenits=5, heterogeneous_canopy=False,
             plant_density=250., inter_row=0.15, update_shared_df=None, prim_scale=False):
@@ -97,6 +102,9 @@ class CaribuFacade(object):
             #: Diffuse light
             if sun_sky_option == 'sky':
                 raw, aggregated_sky = c_scene_sky.run(direct=True, infinite=True)
+                # zhao: try the sail calculation for distant radiation. (i.e. the mixed_radiosity algorithm)
+                # raw, aggregated_sky = c_scene_sky.run(direct=False, infinite=True)
+                
                 Erel_sky = aggregated_sky['par']['Eabs']  #: Erel is the relative surfacic absorbed energy per organ
                 PARa_sky = {k: v * energy for k, v in Erel_sky.items()}
                 Erel_output = Erel_sky
@@ -111,6 +119,7 @@ class CaribuFacade(object):
             #: Direct light
             elif sun_sky_option == 'sun':
                 raw, aggregated_sun = c_scene_sun.run(direct=True, infinite=True)
+                
                 Erel_sun = aggregated_sun['par']['Eabs']  #: Erel is the relative surfacic absorbed energy per organ
                 PARa_sun = {k: v * energy for k, v in Erel_sun.items()}
                 Erel_output = Erel_sun
@@ -118,7 +127,7 @@ class CaribuFacade(object):
 
                 # Primitive scale
                 if prim_scale:
-                    Erel_prim = raw['par']['Eabs']
+                    Erel_prim = raw['par']['Eabs']  # zhao: in this case, the 'Erel_prim' will be in the shape {element_id: [triangle1_value, triangle2_value, ...]}
                     raw_Eabs_abs = {k: [Eabs * energy for Eabs in raw['par']['Eabs'][k]] for k in raw['par']['Eabs']}
                     outputs.update({'Erel_prim': Erel_prim, 'PARa_prim': raw_Eabs_abs, 'area_prim': raw['par']['area']})
 
@@ -218,6 +227,10 @@ class CaribuFacade(object):
             if not heterogeneous_canopy:  # TODO: adapt the domain to plant_density
                 c_scene_sky = CaribuScene(scene=self._shared_mtg, light=sky, pattern=self._geometrical_model.domain, opt=opt)
                 c_scene_sun = CaribuScene(scene=self._shared_mtg, light=sun, pattern=self._geometrical_model.domain, opt=opt)
+                ############### added by zhao ###########################
+                self._c_scene_sky = c_scene_sky
+                self._c_scene_sun = c_scene_sun
+                #########################################################
             else:
                 duplicated_scene, domain = self._create_heterogeneous_canopy(plant_density=plant_density, inter_row=inter_row)
                 c_scene_sky = CaribuScene(scene=duplicated_scene, light=sky, pattern=domain, opt=opt)

@@ -276,7 +276,7 @@ def calculate_deltaL_postE(prev_leaf_pseudo_age, leaf_pseudo_age, prev_leaf_L, l
     return max(0., delta_leaf_L)
 
 
-def calculate_update_leaf_Lmax(leaf_Lmax_em, leaf_L, leaf_pseudo_age):
+def calculate_update_leaf_Lmax(leaf_Lmax_em, leaf_L, leaf_pseudo_age):  # zhao: TODO, modify this function according to WATARU TAKAHASHI (2015)
     """ Update leaf_Lmax following a reduction of delta_leaf_L due to C and N regulation.
     Updated final length is calculated as the sum of the theoritical remaining length to elongate (leaf_Lmax_em * (1 - Beta_function(leaf_pseudo_age)))
     and the actual elongation at the end of the time step. This could lead to shorter or longer leaves, but the duration of elongation is not modified.
@@ -350,7 +350,7 @@ def calculate_lamina_L(leaf_L, leaf_pseudostem_length, hiddenzone_id, lamina_Lma
                min(lamina_L, lamina_Lmax))  # Minimum length set to 10^-6 m to make sure growth-wheat can run even if the lamina turns back hidden (case when an older sheath elongates faster)
 
 
-def calculate_leaf_Lmax(leaf_Lem_prev):
+def calculate_leaf_Lmax(leaf_Lem_prev): # zhao: this function is only used in the initialization of a new phytomer
     """ Final leaf length.
 
     :param float leaf_Lem_prev: Leaf length at the emergence of the previous leaf (m)
@@ -372,7 +372,7 @@ def calculate_SL_ratio(leaf_rank):
     return parameters.SL_ratio_a * leaf_rank ** 3 + parameters.SL_ratio_b * leaf_rank ** 2 + parameters.SL_ratio_c * leaf_rank + parameters.SL_ratio_d
 
 
-def calculate_lamina_Lmax(leaf_Lmax, sheath_lamina_ratio):
+def calculate_lamina_Lmax(leaf_Lmax, sheath_lamina_ratio):  # zhao: TODO: modify the equation as  lamina_Lmax = (1-0.393)*leaf_Lmax-41.4 according to WATARU TAKAHASHI (2015) eqn 25
     """ Final lamina length.
 
     :param float leaf_Lmax: Final leaf length (m)
@@ -384,7 +384,7 @@ def calculate_lamina_Lmax(leaf_Lmax, sheath_lamina_ratio):
     return leaf_Lmax / (1 + sheath_lamina_ratio)
 
 
-def calculate_sheath_Lmax(leaf_Lmax, lamina_Lmax):
+def calculate_sheath_Lmax(leaf_Lmax, lamina_Lmax):  # zhao: TODO: modify the equation as  sheath_Lmax = 41.4+0.393*leaf_Lmax according to WATARU TAKAHASHI (2015) eqn 25
     """ Final sheath length.
 
     :param float leaf_Lmax: Final leaf length (m)
@@ -419,7 +419,7 @@ def calculate_mean_conc_sucrose(prev_mean_conc_sucrose, time_prev_leaf2_emergenc
     return new_integral_conc_sucrose
 
 
-def calculate_leaf_Wmax(lamina_Lmax, leaf_rank, integral_conc_sucr, optimal_growth_option=False):
+def calculate_leaf_Wmax(lamina_Lmax, leaf_rank, integral_conc_sucr, optimal_growth_option=False): # zhao: TODO modify the function according to WATARU (2015). eqn 21
     """ Maximal lamina width.
 
     :param float lamina_Lmax: Maximal lamina length (m)
@@ -545,7 +545,7 @@ def calculate_internode_distance_to_emerge(ligule_heights, bottom_hiddenzone_hei
     return max(0, internode_distance_to_emerge)
 
 
-def calculate_internode_Lmax(internode_L_lig):
+def calculate_internode_Lmax(internode_L_lig):  #zhao: TODO modify the formula according to WATARU (2015). eqn 27
     """ Final internode length.
 
     :param float internode_L_lig: Internode length at the ligulation of the previous leaf (m)

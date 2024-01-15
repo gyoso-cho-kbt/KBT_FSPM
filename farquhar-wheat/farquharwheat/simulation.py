@@ -60,9 +60,9 @@ class Simulation(object):
             update(parameters.__dict__, update_parameters)
             # parameters.__dict__.update(update_parameters)
         
-        print('')
-        print('Vc_max:', parameters.__dict__['PARAM_TEMP']['deltaHa']['Vc_max'])
-        print('Jmax:', parameters.__dict__['PARAM_TEMP']['deltaHa']['Jmax'])
+        # print('')
+        # print('Vc_max:', parameters.__dict__['PARAM_TEMP']['deltaHa']['Vc_max'])
+        # print('Jmax:', parameters.__dict__['PARAM_TEMP']['deltaHa']['Jmax'])
 
     def initialize(self, inputs):
         """

@@ -90,7 +90,7 @@ def _organ_temperature(w, z, Zh, Ur, PAR, gsw, Ta, Ts, RH, organ_name):
     return Ts, Tr
 
 
-def _stomatal_conductance(Ag, An, surfacic_nitrogen, ambient_CO2, RH):
+def _stomatal_conductance(Ag, An, surfacic_nitrogen, ambient_CO2, RH, Ts):
     """
     Ball, Woodrow, and Berry model of stomatal conductance (1987)
 
@@ -105,10 +105,21 @@ def _stomatal_conductance(Ag, An, surfacic_nitrogen, ambient_CO2, RH):
     """
 
     Cs = ambient_CO2 - An * (parameters.K_Cs / parameters.GB)  #: CO2 concentration at organ surface (µmol mol-1 or Pa). From Prieto et al. (2012). GB in mol m-2 s-1
-    m = parameters.PARAM_N['delta1'] * surfacic_nitrogen ** parameters.PARAM_N['delta2']  #: Scaling factor dependance to surfacic_nitrogen (dimensionless). This focntion is maintained
+    # zhao: add the case when surfacic_nitrogen is no greater than 0
+    if surfacic_nitrogen<=0:
+        m = 0
+    else:
+        m = parameters.PARAM_N['delta1'] * surfacic_nitrogen ** parameters.PARAM_N['delta2']  #: Scaling factor dependance to surfacic_nitrogen (dimensionless). This function is maintained
     # although I'm not conviced that it should be taken into account
+    # m is the composite sensitivity of gsw to An. From Coupling biochemical and biophysical processes at the leaf level (1995)
     gsw = (parameters.GSMIN + m * ((Ag * RH) / Cs))  #: Stomatal conductance to water vapour (mol m-2 s-1), from Braune et al. (2009), Muller et al. (2005): using Ag rather than An.
     # Would be better with a function of VPD and with (Ci-GAMMA) instead of Cs.
+    
+    ##### 2023/12/14 zhao: alternative implement for gsw (Leuning model) #######################################
+    # D0 = 5
+    # RH2VPD = lambda t: (1-RH/100)*parameters.s_C * exp((parameters.s_B * t) / (parameters.s_A + t))/1000
+    # gsw = (parameters.GSMIN + m * (An/(Cs-_f_temperature('Gamma', parameters.GAMMA25, Ts))/(1+RH2VPD(Ts)/D0)))
+    #############################################################################################################
     return gsw
 
 
@@ -144,7 +155,7 @@ def _f_temperature(pname, p25, T):
     deltaHa = parameters.PARAM_TEMP['deltaHa'][pname]  #: Enthalpie of activation of parameter pname (kJ mol-1)
     Tref = parameters.PARAM_TEMP['Tref']
 
-    # maybe the right way for understanding the following formula could be: deltaHa/(R*1E-3*Tk) * (Tk-Tref)/Tref, i.e. the (Tk-Tref)/Tref acts as a ratio and modulate with the standard formula.
+    # zhao: maybe the right way for understanding the following formula could be: deltaHa/(R*1E-3*Tk) * (Tk-Tref)/Tref, i.e. the (Tk-Tref)/Tref acts as a ratio and modulate with the standard formula.
     f_activation = exp((deltaHa * (Tk - Tref)) / (parameters.R * 1E-3 * Tref * Tk))  #: Energy of activation (normalized to unity)
 
     if pname in ('Vc_max', 'Jmax', 'TPU'):
@@ -152,8 +163,6 @@ def _f_temperature(pname, p25, T):
         deltaHd = parameters.PARAM_TEMP['deltaHd'][pname]  #: Enthalpie of deactivation of parameter pname (kJ mol-1)
         f_deactivation = (1 + exp((Tref * deltaS - deltaHd) / (Tref * parameters.R * 1E-3))) / (
                 1 + exp((Tk * deltaS - deltaHd) / (Tk * parameters.R * 1E-3)))  #: Energy of deactivation (normalized to unity)
-                # zhao: the f_deactivation function is a mono decrease function with regard to 'deltaS'
-                # zhao: under deltaS=0.486, the f_deactivation is a mono increase function with regard to 'deltaHd'
     else: # e.g. Kc, Ko, Gamma, Rdark
         f_deactivation = 1
 
@@ -211,13 +220,10 @@ def calculate_photosynthesis(PAR, surfacic_nitrogen, NSC_Retroinhibition, surfac
     surfacic_nitrogen_min_Jmax25 = parameters.PARAM_N['surfacic_nitrogen_min']['Jmax25']
     Jmax25 = Sna_Jmax25 * (surfacic_nitrogen - surfacic_nitrogen_min_Jmax25)  #: Relation between Jmax25 and surfacic_nitrogen (µmol m-2 s-1)
     Jmax = _f_temperature('Jmax', Jmax25, Ts)  #: Relation between Jmax and temperature (µmol m-2 s-1)
-
-    J = ((Jmax + ALPHA * PAR) - sqrt((Jmax + ALPHA * PAR) ** parameters.J_expo - parameters.J_A * parameters.THETA * ALPHA * PAR * Jmax)) / (
-            parameters.J_B * parameters.THETA)  #: Electron transport rate (Muller et al. (2005), Evers et al. (2010)) (µmol m-2 s-1)
+    J = ((Jmax + ALPHA * PAR) - sqrt((Jmax + ALPHA * PAR) ** parameters.J_expo - parameters.J_A * parameters.THETA * ALPHA * PAR * Jmax)) / (parameters.J_B * parameters.THETA)  #: Electron transport rate (Muller et al. (2005), Evers et al. (2010)) (µmol m-2 s-1)
     Aj = (J * (Ci - Gamma)) / (parameters.Aj_A * Ci + parameters.Aj_B * Gamma)  #: Rate of assimilation under RuBP regeneration limitation (µmol m-2 s-1)
 
     #: Triose phosphate utilisation-limited carboxylation rate --- NOT USED, calculated just for information
-    # zhao: calculation in the case of photorespiration 
     Sna_TPU25 = parameters.PARAM_N['S_surfacic_nitrogen']['TPU25']
     surfacic_nitrogen_min_TPU25 = parameters.PARAM_N['surfacic_nitrogen_min']['TPU25']
     TPU25 = Sna_TPU25 * (surfacic_nitrogen - surfacic_nitrogen_min_TPU25)  #: Relation between TPU25 and surfacic_nitrogen (µmol m-2 s-1)
@@ -233,13 +239,27 @@ def calculate_photosynthesis(PAR, surfacic_nitrogen, NSC_Retroinhibition, surfac
     if NSC_Retroinhibition:
         Ag = min(Ac, Aj) * (1 - _inhibition_by_NSC(surfacic_NSC))
     else:
-        Ag = min(Ac, Aj, Ap)  # zhao memo: Ap > Ac, commonly  
+        # zhao: add the following three lines for debug purpose.
+        calculate_photosynthesis.Ac = Ac
+        calculate_photosynthesis.Aj = Aj
+        calculate_photosynthesis.Ap = Ap
+        Ag = min(Ac, Aj, Ap)
 
     #: Mitochondrial respiration rate of organ in light Rd (processes other than photorespiration)
     Rdark25 = parameters.PARAM_N['S_surfacic_nitrogen']['Rdark25'] * (surfacic_nitrogen - parameters.PARAM_N['surfacic_nitrogen_min'][
         'Rdark25'])  #: Relation between Rdark25 (respiration in obscurity at 25 degree C) and surfacic_nitrogen (µmol m-2 s-1)
     Rdark = _f_temperature('Rdark', Rdark25, Ts)  #: Relation between Rdark and temperature (µmol m-2 s-1)
     Rd = Rdark * (parameters.Rd_A + (1 - parameters.Rd_A) * parameters.Rd_B ** (PAR / parameters.Rd_C))  # Found in Muller et al. (2005), eq. 19 (µmol m-2 s-1)
+    
+    # zhao: solve a qudratic equation for obtaining a smoother result Found in "Coupling biochemical and biophysical processes at the leaf level: an equilibrium photosynthesis model for leaves of C3 plants" Eq. (4)
+    import numpy as np
+    smoothAg = np.roots([0.95, -(Ac+Aj), Ac*Aj])
+    # zhao: also add smooth Ag for debug purpose.
+    calculate_photosynthesis.smoothAg = np.amin(smoothAg)
+    
+    ########### 2023/12/07 output the smoother Ag #############
+    Ag = np.amin(smoothAg)
+    ########## 2023/12/07 end of the modification #############
 
     #: Net C assimilation (µmol m-2 s-1)
     if Ag <= 0:  # Occurs when Ci is lower than Gamma or when (surfacic_nitrogen - surfacic_nitrogen_min)<0, in these cases there is no net assimilation (Farquhar, 1980; Caemmerer, 2000)
@@ -358,7 +378,7 @@ def run(surfacic_nitrogen, NSC_Retroinhibition, surfacic_NSC, width, height, PAR
         prec_Ci, prec_Ts = Ci, Ts
         Ag, An, Rd = calculate_photosynthesis(PAR, surfacic_nitrogen, NSC_Retroinhibition, surfacic_NSC, Ts, Ci) # Ag and An are highly non-linear w.r.t Ts and Ci
         # Stomatal conductance to water
-        gsw = _stomatal_conductance(Ag, An, surfacic_nitrogen, ambient_CO2, RH) # the function is nearly linear w.r.t. Ag, An, and linear with RH
+        gsw = _stomatal_conductance(Ag, An, surfacic_nitrogen, ambient_CO2, RH, Ts) # the function is nearly linear w.r.t. Ag, An, and linear with RH
 
         # New value of Ci
         Ci = _calculate_Ci(ambient_CO2, An, gsw) # the function is highly non-linear w.r.t. gsw thus highly non-linear w.r.t. Ag, An. In particular when An is low

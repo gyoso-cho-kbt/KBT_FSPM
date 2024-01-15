@@ -356,9 +356,15 @@ def main(stop_time, run_simu=True, make_graphs=True):
         # adapt the PARAM_TEMP for actual meteorlogical data for rice.
         update_parameters_farquharwheat = {
         'SurfacicProteins': False, 'NSC_Retroinhibition': False,
-        'DELTA_CONVERGENCE': 0.0001,
-        # 'PARAM_N':{'S_surfacic_nitrogen': {'Vc_max25' : 100, 'Jmax25': 150}}, # 84.965 -> 100, 117.6->150
-        'PARAM_TEMP':{'deltaHa':{'Jmax': 48.9+52, 'Vc_max':89.7+52}, 'deltaHd':{'Jmax': 152.3+8, 'Vc_max':149.3+8}},
+        'DELTA_CONVERGENCE': 0.000001,
+        #################### 2023/10/27 parameter adjustment based on information from kano san ##########################################
+        # 'PARAM_TEMP': {'deltaHa': {'TPU': 47 + 26}, 'deltaHd': {'TPU': 152.3 + 3}, 'Tref': 298.15-5 },
+        # 'Ap_A': 3 * 0.15, 'Vomax_A': 0.5 * 300, 'Aj_A' : 2,
+        
+        #################### 2023/11/02 parameter adaption based on kano san information, and use Ac constrain rather than Ap #################
+        #################### 2023/12/04 add modification of {'deltaHa':'Jmax'} and {'deltaHd':'Jmax'} to correct the temperature repsonse of Ap #########
+        'PARAM_TEMP': {'deltaHa': {'Vc_max': 89.7 + 8, 'Jmax': 48.9 + 5}, 'deltaHd':{'Vc_max': 149.3 + 5, 'Jmax': 152.3+1}, 'Tref': 298.15 + 5},
+        'PARAM_N': {'S_surfacic_nitrogen': { 'Vc_max25': 84.965 - 62}},
         }  
 
         farquharwheat_facade_ = farquharwheat_facade.FarquharWheatFacade(g,
@@ -389,8 +395,8 @@ def main(stop_time, run_simu=True, make_graphs=True):
         # zhao memo: lower the root K_AMINO_ACIDS_EXPORT/K_NITRATE_EXPORT (from 25*3E-5/25*1E-6 -> 1E-6/1E-7) in attempt to lower the N content in phloem
         # set offset to -9 in (cn)model.modified_Arrhenius_equation to acclerate the grain growth (i.e. the age_from_flowering) a bit compared to -11.5
         # increase 'SIGMA_AMINO_ACIDS' (1e-07 -> 1) to accelerate the N translocation in blade.
-        update_cnwheat_parameters = {'roots': {'K_AMINO_ACIDS_EXPORT': 25*3E-5, #5E-4, #1E-4, #1E-6,   
-                                               'K_NITRATE_EXPORT': 25*1E-6, #5E-6, #1E-6, #1E-7, 
+        update_cnwheat_parameters = {'roots': {'K_AMINO_ACIDS_EXPORT':  1E-6, #1E-4, #25*3E-5, #5E-4, 
+                                               'K_NITRATE_EXPORT': 1E-7, #1E-6, #25*1E-6, #5E-6,  
                                                }, 
                                      'PhotosyntheticOrgan': {'VMAX_SFRUCTAN_POT': 0, 
                                                              'SIGMA_AMINO_ACIDS': 1,
@@ -411,34 +417,53 @@ def main(stop_time, run_simu=True, make_graphs=True):
                                                        shared_elements_inputs_outputs_df,
                                                        shared_soils_inputs_outputs_df)
                                                        
-
         # define organs for which the variable 'max_proteins' is fixed
         forced_max_protein_elements = {(1, 'MS', 9, 'blade', 'LeafElement1'), (1, 'MS', 10, 'blade', 'LeafElement1'), (1, 'MS', 11, 'blade', 'LeafElement1'), (2, 'MS', 9, 'blade', 'LeafElement1'),
                                        (2, 'MS', 10, 'blade', 'LeafElement1'), (2, 'MS', 11, 'blade', 'LeafElement1')}
 
 
         # manually set the 'width' according to the measured values
-        g.node(197).properties()['width'] = 0.0105 # width of flag leaf (m)
-        g.node(167+14).properties()['width'] = 0.00925
-        g.node(151+14).properties()['width'] = 0.00775
-        g.node(135+14).properties()['width'] = 0.00850
+        g.property('width')[197] = 0.0105
+        g.property('width')[167+14] = 0.00925
+        g.property('width')[151+14] = 0.00775
+        g.property('width')[135+14] = 0.00850
+        # g.node(197).properties()['width'] = 0.0105 # width of flag leaf (m)
+        # g.node(167+14).properties()['width'] = 0.00925
+        # g.node(151+14).properties()['width'] = 0.00775
+        # g.node(135+14).properties()['width'] = 0.00850
         # sheath
-        g.node(183+9).properties()['width'] = 0.00330
-        g.node(167+9).properties()['width'] = 0.00410
-        g.node(151+9).properties()['width'] = 0.00565
-        g.node(135+9).properties()['width'] = 0.00620
+        g.property('width')[183+9] = 0.00330
+        g.property('width')[167+9] = 0.00410
+        g.property('width')[151+9] = 0.00565
+        g.property('width')[135+9] = 0.00620
+        # g.node(183+9).properties()['width'] = 0.00330
+        # g.node(167+9).properties()['width'] = 0.00410
+        # g.node(151+9).properties()['width'] = 0.00565
+        # g.node(135+9).properties()['width'] = 0.00620
         #internode
-        g.node(183+4).properties()['width'] = 0.00330
-        g.node(167+4).properties()['width'] = 0.00410
-        g.node(151+4).properties()['width'] = 0.00565
-        g.node(135+4).properties()['width'] = 0.00620
+        g.property('width')[183+4] = 0.00330
+        g.property('width')[167+4] = 0.00410
+        g.property('width')[151+4] = 0.00565
+        g.property('width')[135+4] = 0.00620
+        # g.node(183+4).properties()['width'] = 0.00330
+        # g.node(167+4).properties()['width'] = 0.00410
+        # g.node(151+4).properties()['width'] = 0.00565
+        # g.node(135+4).properties()['width'] = 0.00620
+        
+        print('checking the updated initial values')
+        # print('proteins in blade 11 {} is 219.0421'.format(g.node(181).properties()['proteins']))
+        # print('proteins in blade 12 {} is 198.6155'.format(g.node(197).properties()['proteins']))
+        # print('strucuture in grains {} is 10027.24'.format(g.node(2).properties()['grains']['structure']))
+        # print('ear mstruct {} is 0.21'.format(g.node(206).properties()['mstruct']))
+        print('finish checking intial values')
         
         # define the start and the end of the whole simulation (in hours)
         start_time = 252   # (h)
-        stop_time = start_time + 35*24  # stop_time=1092 the span for actual measurement is 35 days
+        stop_time = start_time + 35*24  # stop_time=252+35*24=1092 the span for actual measurement is 35 days
         
         # manually set the grain flowering age
-        g.node(2).properties()['grains']['age_from_flowering'] = (start_time-50)*60*60 #(start_time+80)*60*60 # plus an offset (30) for high temperature regime acceleration
+        ##################### 2023/12/04 remove the offset value in the 'age_from_flowering'  ###############
+        g.node(2).properties()['grains']['age_from_flowering'] = start_time*60*60 #(start_time+80)*60*60 ## plus an offset for high temperature regime acceleration
         
         # manually set the interpolation time interval
         calculate_PARa_by_interploation_df.start_t = 0
@@ -458,7 +483,6 @@ def main(stop_time, run_simu=True, make_graphs=True):
         try:
 
             for t_elongwheat in range(start_time, stop_time, elongwheat_ts):  # Only to compute temperature related variable
-
                 # run ElongWheat
                 print('t elongwheat is {}'.format(t_elongwheat))
                 Tair, Tsoil = meteo.loc[t_elongwheat, ['air_temperature', 'air_temperature']]
@@ -479,6 +503,7 @@ def main(stop_time, run_simu=True, make_graphs=True):
                         break
 
                     for t_growthwheat in range(t_senescwheat, t_senescwheat + senescwheat_ts, growthwheat_ts):
+
                         # run GrowthWheat
                         print('t growthwheat is {}'.format(t_growthwheat))
                         growthwheat_facade_.run(postflowering_stages=True)
@@ -504,6 +529,9 @@ def main(stop_time, run_simu=True, make_graphs=True):
                                 # run CNWheat
                                 print('t cnwheat is {}'.format(t_cnwheat))
                                 cnwheat_facade_.run(Tair=Tair, Tsoil=Tsoil)
+                                # The following print statement is for debugging the updated cn module paramter. 
+                                # It should be put here because the update not be executed until the _initialize_model in run function
+                                # print('modified cn parameter {} is {}'.format('VMAX_RGR', cnwheat_facade_.population.plants[0].axes[0].grains.PARAMETERS.VMAX_RGR))
 
                                 # append the inputs and outputs at current step to global lists
                                 all_simulation_steps.append(t_cnwheat)

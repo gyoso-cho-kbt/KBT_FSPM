@@ -102,11 +102,10 @@ class Plant(object):
         :return: Correction to apply to conductivity coefficients.
         :rtype: float
         """
-        Q10 = 1.3
+        Q10 = 1.3 # zhao memo: adjust Q10 value as 1.2 or 1.1 only has slight affect on final result.
         Tref = 20.
 
-        # return Q10 ** ((Tair - Tref) / 10.)
-        return Q10** ((Tair - Tref - 11.5) / 10.) # zhao: temporarily reduce a value to fit rice weather data.
+        return Q10 ** ((Tair - Tref) / 10.) 
 
     @staticmethod
     def calculate_temperature_effect_on_Vmax(Tair):
@@ -119,8 +118,8 @@ class Plant(object):
         :rtype: float
         """
         Tref = 20 + 273.15
-        # Tk = Tair + 273.15
-        Tk = Tair + 273.15 - 11.5 # zhao: temporarily minus a value
+        Tk = Tair + 273.15
+        # Tk = Tair + 273.15 - 11.5 # zhao: temporarily minus a value, this effectively slower down the ratio for Vmax
         R = 8.3144  #: Physical parameter: Gas constant (J mol-1 K-1)
         deltaHa = 55  #: Enthalpie of activation of parameter pname (kJ mol-1)
         deltaS = 0.48  #: entropy term of parameter pname (kJ mol-1 K-1)
@@ -573,59 +572,6 @@ class Phloem(Organ):
         return amino_acids_derivative
 
 
-###################### authored by zhao for water content simulation #################
-class Xylem(Organ):
-    PARAMETERS = 'Xylem Parameters in paraterms.py'#
-    INIT_COMPARTMENTS = 'Xylem Init Compartments in parameters.py'#
-    
-    def __init__(self, label='Xylem', total_water = None):
-        # state variables
-        self.vascular_water = 'a function of total water'
-        self.storage_water = 'another function of total water'
-        
-        # intermediate variables, e.g. resistance etc.
-        self.xylem_resistance = 'some value' # Rx, rely on phi_root
-        self.apoplastic_resistance = 'some value'   # Rap, rely on phi_root
-        self.cell_to_cell_resistance = 'some value'  # Rcc, is a constant
-        self.vascular_resistance = 'some value'  # Rvp, is a constant
-
-        # flux (used for derivative calculation for state variables)
-        self.flow_vp = 'some value'
-        self.flow_cc = 'some value'
-        self.flow_ap = 'some value'
-        
-        
-    @staticmethod
-    def calculate_flow(phloem_sucrose, xylem_water_potential, root_water_potential):
-        """
-        flow calculation based on the given phloem sucrose
-        """
-        def calculate_osmotic_potential(phloem_sucrose, root_water_potential):
-            OA = 'a function of root water potential' # OA relates to the drought response. The sucrose distribution for vascular and storage is adjusted accordingly.
-            vascular_osmotic_potential = 'a function of phloem sucrose and OA' # refer to S13, S39, S40, S12
-            storage_osmotic_potential = 'another function of phloem sucrose and OA' # refer to S38, S10, S39
-            return vascular_osmotic_potential, storage_osmotic_potential
-            
-        # calculate osmotic potential based on sucrose concentration.
-        vascular_osmotic_potential, storage_osmotic_potential = calculate_osmotic_potential(phloem_sucrose, root_water_potential)
-        vascular_water_potential = xylem_water_potential # assume the vascular_water_potential is equal to the xylem_water_potential
-        vascular_turgor_potential = vascular_water_potential - vascular_osmotic_potential 
-        storage_turgor_potential = vascular_turgor_potential # assume the two are equal
-        storage_water_potential = storage_turgor_potential+storage_osmotic_potential
-        
-        flow_vp = (xylem_water_potential - vascular_water_potential)/self.vascular_resistance
-        flow_cc = (vascular_water_potential - storage_water_potential)/self.cell_to_cell_resistance
-        flow_ap = (vascular_turgor_potential - storage_water_potential)/self.apoplastic_resistance
-        return flow_vp, flow_cc, flow_ap
-        
-    def calculate_storage_water_derivative(self, flow_ap, flow_cc):
-        return flow_ap+flow_cc
-    
-    def calculate_vascular_water_derivative(self, flow_vp, flow_ap, flow_cc):
-        return flow_vp-flow_ap-flow_cc
-
-######################################################################################
-
 # def grain_filling_debugger(func):
     # grain_filling_debugger.counter = 0
     # def inner(ref, sucrose_phloem, mstruct_axis, T_effect_Vmax):
@@ -701,18 +647,12 @@ class Grains(Organ):
         Temp_DS_R = 68.432  # Parameter deltaS/R in Eyring equation from Johnson and Lewin (1946) - Parameter value fitted from Kemp and Blacklow (1982) (dimensionless)
         Temp_DH_R = 20735.5  # Parameter deltaH/R in Eyring equation from Johnson and Lewin (1946) - Parameter value fitted from Kemp and Blacklow (1982) (K)
         Temp_Ttransition = 9  # Below this temperature f = linear function of temperature instead of Arrhenius-like(°C)
-        
-        # # zhao: temporary modification for rice meteorlogical data. Shift the peak to a higher temperature.
-        # Temp_Ea_R = 8900+350
-        # Temp_DS_R = 68.432
-        # Temp_DH_R = 20735.5 + 800
-        # Temp_Ttransition = 9
 
         def Arrhenius_equation(T):
             return T * exp(-Temp_Ea_R / T) / (1 + exp(Temp_DS_R - Temp_DH_R / T))
 
-        # temperature_K = temperature + 273.15  #: Kelvins
-        temperature_K = temperature + 273.15 #- 9 #- 11.5   # zhao: temporarily minus a value to fit the rice weather data
+        temperature_K = temperature + 273.15  #: Kelvins
+        # temperature_K = temperature + 273.15 - 9 # zhao: temporarily minus a value to fit the rice weather data
 
         if temperature < 0:
             res = 0
@@ -1876,8 +1816,8 @@ class Soil(object):
         :rtype: float
         """
         Tref = 20 + 273.15
-        # Tk = Tsoil + 273.15
-        Tk = Tsoil + 273.15 - 11.5 # zhao: temporarily reduce a value to fit rice weather data.
+        Tk = Tsoil + 273.15
+        # Tk = Tsoil + 273.15 - 11.5 # zhao: temporarily reduce a value to fit rice weather data.
         R = 8.3144  #: Physical parameter: Gas constant (J mol-1 K-1)
         deltaHa = 55  # 89.7  #: Enthalpie of activation of parameter pname (kJ mol-1)
         deltaS = 0.48  # 0.486  #: entropy term of parameter pname (kJ mol-1 K-1)
@@ -1902,8 +1842,7 @@ class Soil(object):
         Q10 = 1.3
         Tref = 20.
 
-        # return Q10 ** ((Tsoil - Tref) / 10.)
-        return Q10 **((Tsoil - Tref - 11.5)/10) # zhao: temporarily reduce a value to fit rice weather data.
+        return Q10 ** ((Tsoil - Tref) / 10.)
 
     # VARIABLES
 

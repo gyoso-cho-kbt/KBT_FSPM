@@ -461,7 +461,10 @@ def main(simulation_length=2000, forced_start_time=0, run_simu=True, run_postpro
                 else:
                     run_caribu = False
 
-                caribu_facade_.run(run_caribu, energy=PARi, DOY=DOY, hourTU=hour, latitude=48.85, sun_sky_option='sky', heterogeneous_canopy=heterogeneous_canopy,
+                # caribu_facade_.run(run_caribu, energy=PARi, DOY=DOY, hourTU=hour, latitude=48.85, sun_sky_option='sky', heterogeneous_canopy=heterogeneous_canopy,
+                                   # plant_density=PLANT_DENSITY[1], inter_row=INTER_ROW)
+                # change to the latitude of yokoda farm
+                caribu_facade_.run(run_caribu, energy=PARi, DOY=DOY, hourTU=hour, latitude=36.23, sun_sky_option='sky', heterogeneous_canopy=heterogeneous_canopy,
                                    plant_density=PLANT_DENSITY[1], inter_row=INTER_ROW)
 
                 for t_senescwheat in range(t_caribu, t_caribu + SENESCWHEAT_TIMESTEP, SENESCWHEAT_TIMESTEP):
@@ -1008,4 +1011,4 @@ def main(simulation_length=2000, forced_start_time=0, run_simu=True, run_postpro
 if __name__ == '__main__':
     main(simulation_length=2000, forced_start_time=0,
          run_simu=True, run_postprocessing=True, generate_graphs=True, run_from_outputs=False,
-         show_3Dplant=False, heterogeneous_canopy=True, METEO_FILENAME="meteo_PAR500.csv")
+         show_3Dplant=True, heterogeneous_canopy=True, METEO_FILENAME="meteo_PAR500.csv")
