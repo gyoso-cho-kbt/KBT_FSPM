@@ -103,7 +103,7 @@ class Simulation(object):
         """
         # Copy the inputs into the output dict
         self.outputs.update({inputs_type: copy.deepcopy(all_inputs) for inputs_type, all_inputs in self.inputs.items() if inputs_type in {'hiddenzone', 'elements', 'roots', 'axes'}})
-
+        
         # Hidden growing zones
         all_hiddenzone_inputs = self.inputs['hiddenzone']
         all_hiddenzone_outputs = self.outputs['hiddenzone']
@@ -203,7 +203,8 @@ class Simulation(object):
                     delta_leaf_enclosed_Nstruct = model.calculate_delta_Nstruct(delta_leaf_enclosed_mstruct)
 
                     # leaf has emerged and still growing
-                    visible_lamina_id = hiddenzone_id + tuple(['blade', 'LeafElement1'])
+                    visible_lamina_id = hiddenzone_id + tuple(['blade', 'LeafElement1'])   # zhao: could cause bug when leaf is asserted emerged and growing but LeafElement is not yet created in MTG.
+
                     #: Lamina is growing
                     if all_elements_inputs[visible_lamina_id]['is_growing']:
                         curr_visible_lamina_inputs = all_elements_inputs[visible_lamina_id]
@@ -312,6 +313,10 @@ class Simulation(object):
                     # Add to hidden part of the lamina, if any
                     if share_hidden_sheath < 1:
                         hidden_lamina_id = hiddenzone_id + tuple(['blade', 'HiddenElement'])
+                        # zhao: add the exception process for hidden_lamina_id
+                        if hidden_lamina_id not in self.outputs['elements'].keys():
+                            print('[growthWheat/simulation] hidden_lamina_id {} is not in the input, skip this id'.format(hidden_lamina_id))
+                            continue
                         curr_hidden_lamina_outputs = self.outputs['elements'][hidden_lamina_id]
                         curr_hidden_lamina_outputs['mstruct'] = curr_hiddenzone_outputs['leaf_enclosed_mstruct'] * (1 - share_hidden_sheath)
                         curr_hidden_lamina_outputs['max_mstruct'] = curr_hiddenzone_outputs['leaf_enclosed_mstruct'] * (1 - share_hidden_sheath)

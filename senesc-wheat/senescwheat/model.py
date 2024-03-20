@@ -71,7 +71,7 @@ class SenescenceModel(object):
             fraction_N_max = parameters.FRACTION_N_MAX['stem']
 
         # Overwrite max proteins
-        if max_proteins < proteins and update_max_protein:
+        if max_proteins < proteins and update_max_protein:  # zhao: if 'update_max_protein' is true, the leaf will not senesced
             max_proteins = proteins
             new_green_area = prev_green_area
             relative_delta_green_area = 0

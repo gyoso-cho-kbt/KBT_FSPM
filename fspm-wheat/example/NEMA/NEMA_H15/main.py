@@ -98,19 +98,21 @@ from fspmwheat import cnwheat_facade, farquharwheat_facade, senescwheat_facade, 
 
 # authored by zhao
 # a new version for inserting base/top element
-def insert_base_top_element(g):
+def insert_base_top_element(g):        
     ele_level = 5
     ele_nodes_vid = g.vertices(ele_level)
+    g.add_child(ele_nodes_vid[-1], label='topElement', edge_type='<')
     for e_vid in ele_nodes_vid:
         label = g.node(e_vid).label
-        if label.startswith('Hidden'): # hidden element
-            base_ele_id = g.insert_parent(e_vid, label='baseElement')
+        if label.startswith('Hidden'): # hidden element, insert a baseElement as its parent
+            base_ele_id = g.insert_parent(e_vid, label='baseElement')  # note this operation will left the parent-child link of internode:StemElement--next internode:baseElement reduntant
             g.add_component(complex_id=g.node(e_vid).complex()._vid, component_id=base_ele_id, edge_type='/', label='baseElement')
             g.property('edge_type')[e_vid] = '<' # update the existed node's edge_type to '<' for proper display
-            if g.node(base_ele_id).parent() is not None: # further inser topElement inbetween its parent
+            if g.node(base_ele_id).parent() is not None: # further insert topElement inbetween its parent
                 for n in g.node(base_ele_id).parent().children():
-                    if 'topElement' == n.label: # if topElement has already been inserted, use the exsited one.
-                        g.insert_parent(base_ele_id, n._vid, label='topElement')
+                    if 'topElement' == n.label: # if topElement has already been inserted (internode <-> next internode), use the exsited one.
+                        g.add_child(n._vid, base_ele_id, label='baseElement', edge_type='<')
+                        # g.insert_parent(base_ele_id, n._vid, label='topElement')
                         break
                 else: # not found topElement
                     top_ele_id = g.insert_parent(base_ele_id, label='topElement')
@@ -118,7 +120,16 @@ def insert_base_top_element(g):
                
         elif label.startswith('Leaf'):# leaf element
             g.add_child(e_vid, label='topElement', edge_type='<')
-    return g   
+    
+    #################### remove the redundant parent-child link in internode:StemElement---next internode:baseElement #########
+    for vid in g.vertices(ele_level): # element level
+        if g.node(vid).label.startswith('StemElement'):
+            if len(g._children[vid])>1:
+                for child in g._children[vid]:
+                    if g.node(child).label=='baseElement': # child of stemElement should not be baseElement, remove it
+                        g._children[vid].remove(child)
+    ###########################################################################################################################
+    return g  
 
 # authored by zhao
 # an utility function for altering the label name 'pedoncule' (French) in MTG to the name 'peduncle' (English)

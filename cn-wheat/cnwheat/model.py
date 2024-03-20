@@ -714,7 +714,7 @@ class Grains(Organ):
         Michaelis-Menten function of sucrose concentration in the phloem.
 
         :param float sucrose_phloem: Sucrose concentration in phloem (µmol` C g-1 mstruct)
-        :param float mstruct_axis: The structural dry mass of the axis (g)
+        :param float mstruct_axis: The structural dry mass of the axis (g)  # zhao: note the mstruct_axis includes the grain structure mass, therefore the starch synthesis is indirectly related to the grain mass.
         :param float T_effect_Vmax: Correction to apply to enzyme activity
 
 

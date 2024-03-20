@@ -4,6 +4,7 @@ from __future__ import division  # use "//" to do integer division
 import pandas as pd
 from elongwheat import parameters
 from math import exp, log10
+import numpy as np
 
 """
     elongwheat.model
@@ -73,7 +74,7 @@ def calculate_time_equivalent_Tref(temperature, time):
     :return: temperature-compensated time (s)
     :rtype: float
     """
-    return time * modified_Arrhenius_equation(temperature) / modified_Arrhenius_equation(parameters.Temp_Tref)
+    return time * modified_Arrhenius_equation(temperature) / modified_Arrhenius_equation(parameters.Temp_Tref) # zhao: the current setting (Temp_Tref=12) gives a response curve peaked at 30 degree with value of about 3.3
 
 
 def calculate_cumulated_thermal_time(sum_TT, temperature, delta_teq):
@@ -92,7 +93,7 @@ def calculate_cumulated_thermal_time(sum_TT, temperature, delta_teq):
         return sum_TT
 
 
-def calculate_SAM_primodia(status, teq_since_primordium, delta_teq, nb_leaves, cohort_id):
+def calculate_SAM_primodia(status, teq_since_primordium, delta_teq, nb_leaves, cohort_id):  # zhao: 'teq_since_primordium' represents the time variable, 'delta_teq' represents the time step
     """ Update SAM status, leaf number
 
     :param str status: SAM status ('vegetative', if emitting leaf primordia or 'reproductive')
@@ -154,7 +155,7 @@ def calculate_ligule_height(sheath_internode_length, all_element_inputs, SAM_id,
     for phytomer_id, lengths in sheath_internode_length.items():
         lamina_id = SAM_id + (phytomer_id, 'blade', 'LeafElement1')
 
-        if lamina_id in all_element_inputs.keys() and not all_element_inputs[lamina_id]['is_growing']:
+        if lamina_id in all_element_inputs.keys() and not all_element_inputs[lamina_id]['is_growing']:   # zhao: the leaf is end of growing.
             ligule_height = sum(lengths['sheath'] + lengths['cumulated_internode'])
             ligule_height_df = pd.DataFrame([(SAM_id, phytomer_id, ligule_height)], columns=list(all_ligule_height_df))
             all_ligule_height_df = pd.concat((all_ligule_height_df, ligule_height_df))
@@ -172,7 +173,7 @@ def calculate_leaf_pseudostem_length(ligule_heights, bottom_hiddenzone_height, p
     :return: Distance for the leaf to emerge out of the pseudostem (m)
     :rtype: float
     """
-    top_ligule_height = max(ligule_heights[ligule_heights['phytomer'] < phytomer_id]['ligule height'])  # highest previous ligule
+    top_ligule_height = max(ligule_heights[ligule_heights['phytomer'] < phytomer_id]['ligule height'])
     leaf_pseudostem_length = top_ligule_height - bottom_hiddenzone_height
 
     return max(leaf_pseudostem_length, 0)
@@ -275,7 +276,7 @@ def calculate_deltaL_postE(prev_leaf_pseudo_age, leaf_pseudo_age, prev_leaf_L, l
 
     return max(0., delta_leaf_L)
 
-
+    
 def calculate_update_leaf_Lmax(leaf_Lmax_em, leaf_L, leaf_pseudo_age):  # zhao: TODO, modify this function according to WATARU TAKAHASHI (2015)
     """ Update leaf_Lmax following a reduction of delta_leaf_L due to C and N regulation.
     Updated final length is calculated as the sum of the theoritical remaining length to elongate (leaf_Lmax_em * (1 - Beta_function(leaf_pseudo_age)))
@@ -342,15 +343,17 @@ def calculate_lamina_L(leaf_L, leaf_pseudostem_length, hiddenzone_id, lamina_Lma
     :return: lamina length (m)
     :rtype: float
     """
-    lamina_L = leaf_L - leaf_pseudostem_length
+    lamina_L = leaf_L - leaf_pseudostem_length  # (ISSUE) zhao: it seems that leaf_pseudostem_length is too short (or the leaf_L is too long) that lamina_L becomes longer than the lamina_Lmax, which leads to the stop of the leaf growing.
     # if lamina_L <= 0:
     #     raise Warning('The leaf is shorther than its pseudostem for {}'.format(hiddenzone_id))
-
+    # print('[elongwheat/model/calculate_lamina_L] lamina_L: {}, leaf_L: {}, leaf_pseudostem_length:{}, lamina_Lmax:{}'.format(lamina_L, leaf_L, leaf_pseudostem_length, lamina_Lmax))
     return max(10 ** -5,
                min(lamina_L, lamina_Lmax))  # Minimum length set to 10^-6 m to make sure growth-wheat can run even if the lamina turns back hidden (case when an older sheath elongates faster)
 
-
-def calculate_leaf_Lmax(leaf_Lem_prev): # zhao: this function is only used in the initialization of a new phytomer
+# zhao: this function is only used in the initialization of a new phytomer
+# zhao: modify the function according to Eq. 17 in  WATARU TAKAHASHI (2015)
+# zhao: adding a lower bound (=0.07m) for leaf_Lmax to avoid the sheath_Lmax becomes larger than leaf_Lmax
+def calculate_leaf_Lmax(leaf_rank):
     """ Final leaf length.
 
     :param float leaf_Lem_prev: Leaf length at the emergence of the previous leaf (m)
@@ -358,9 +361,35 @@ def calculate_leaf_Lmax(leaf_Lem_prev): # zhao: this function is only used in th
     :return: Final leaf length (m)
     :rtype: float
     """
-    return min(leaf_Lem_prev / Beta_function(0.), parameters.leaf_Lmax_MAX)
+    Lmax = 428  # (mm)
+    n_max = 10.8
+    d = 3.84
+    
+    # zhao: limited the leaf_Lmax in lower leaf to constrained the length of the pesudo stem
+    if leaf_rank == 3:
+        leaf_Lmax = 0.07
+    elif leaf_rank == 4:
+        leaf_Lmax = 0.1
+    elif leaf_rank == 5:
+        leaf_Lmax = 0.12
+    elif leaf_rank == 6:
+        leaf_Lmax = 0.2
+    else:
+        leaf_Lmax = np.max( [(Lmax*np.exp((-(leaf_rank-n_max)**2)/(2*d)))/1000, 0.2] )
+        
+    return leaf_Lmax   # zhao: convert unit mm to m
+    
+# def calculate_leaf_Lmax(leaf_Lem_prev): # zhao: the output of the function can be considered as the theoritical/initial value for the 'leaf_Lmax', while the 'leaf_Lmax' will be updated according to this value, the current leaf length ('leaf_L') and its pseudo age ('leaf_pseudo_age')
+    # """ Final leaf length.
 
+    # :param float leaf_Lem_prev: Leaf length at the emergence of the previous leaf (m)
 
+    # :return: Final leaf length (m)
+    # :rtype: float
+    # """
+    # return min(leaf_Lem_prev / Beta_function(0.), parameters.leaf_Lmax_MAX)
+
+# zhao: Essentially, the calculation for SL_ratio is not used 
 def calculate_SL_ratio(leaf_rank):
     """ Sheath:Lamina final length ratio according to the rank. Parameters from Dornbush (2011).
 
@@ -370,7 +399,6 @@ def calculate_SL_ratio(leaf_rank):
     :rtype: float
     """
     return parameters.SL_ratio_a * leaf_rank ** 3 + parameters.SL_ratio_b * leaf_rank ** 2 + parameters.SL_ratio_c * leaf_rank + parameters.SL_ratio_d
-
 
 def calculate_lamina_Lmax(leaf_Lmax, sheath_lamina_ratio):  # zhao: TODO: modify the equation as  lamina_Lmax = (1-0.393)*leaf_Lmax-41.4 according to WATARU TAKAHASHI (2015) eqn 25
     """ Final lamina length.
@@ -382,7 +410,7 @@ def calculate_lamina_Lmax(leaf_Lmax, sheath_lamina_ratio):  # zhao: TODO: modify
     :rtype: float
     """
     return leaf_Lmax / (1 + sheath_lamina_ratio)
-
+    
 
 def calculate_sheath_Lmax(leaf_Lmax, lamina_Lmax):  # zhao: TODO: modify the equation as  sheath_Lmax = 41.4+0.393*leaf_Lmax according to WATARU TAKAHASHI (2015) eqn 25
     """ Final sheath length.
@@ -418,8 +446,8 @@ def calculate_mean_conc_sucrose(prev_mean_conc_sucrose, time_prev_leaf2_emergenc
         new_integral_conc_sucrose = (prev_mean_conc_sucrose * time_prev_leaf2_emergence + conc_sucrose * delta_teq) / (time_prev_leaf2_emergence + delta_teq)
     return new_integral_conc_sucrose
 
-
-def calculate_leaf_Wmax(lamina_Lmax, leaf_rank, integral_conc_sucr, optimal_growth_option=False): # zhao: TODO modify the function according to WATARU (2015). eqn 21
+# zhao: modify the function according to WATARU (2015). Eq. 21
+def calculate_leaf_Wmax(leaf_Lmax): 
     """ Maximal lamina width.
 
     :param float lamina_Lmax: Maximal lamina length (m)
@@ -430,16 +458,37 @@ def calculate_leaf_Wmax(lamina_Lmax, leaf_rank, integral_conc_sucr, optimal_grow
     :return: Maximal leaf width (m)
     :rtype: float
     """
-    if optimal_growth_option:
-        Wmax = parameters.leaf_Wmax_dict[leaf_rank]
-
-    else:
-        #: Width:length ratio
-        W_L_ratio = max(parameters.leaf_W_L_MIN, parameters.leaf_W_L_a - (parameters.leaf_W_L_b / parameters.leaf_W_L_c) * (1 - exp(-parameters.leaf_W_L_c * integral_conc_sucr)))
-
-        #: Maximal width (m)
-        Wmax = lamina_Lmax * W_L_ratio
+    
+    #zhao: TODO: add processing for flag leaf
+    Wp = 12.5
+    b = 16.19
+    c = 0.0424
+    d = 10.96
+    Wmax = Wp/((1+np.exp(b-c*leaf_Lmax*1000))**(1/d)) # zhao: convert the unit of leaf_Lmax from m to mm
+    Wmax = Wmax/1000 # zhao: convert the unit from mm back to m
     return Wmax
+    
+# def calculate_leaf_Wmax(lamina_Lmax, leaf_rank, integral_conc_sucr, optimal_growth_option=False): # zhao: TODO modify the function according to WATARU (2015). eqn 21
+    # """ Maximal lamina width.
+
+    # :param float lamina_Lmax: Maximal lamina length (m)
+    # :param int leaf_rank: leaf phytomer number
+    # :param float integral_conc_sucr: 
+    # :param bool optimal_growth_option: if True the function will calculate leaf Wmax assuming optimal growth conditions
+    
+    # :return: Maximal leaf width (m)
+    # :rtype: float
+    # """
+    # if optimal_growth_option:
+        # Wmax = parameters.leaf_Wmax_dict[leaf_rank]
+
+    # else:
+        # #: Width:length ratio
+        # W_L_ratio = max(parameters.leaf_W_L_MIN, parameters.leaf_W_L_a - (parameters.leaf_W_L_b / parameters.leaf_W_L_c) * (1 - exp(-parameters.leaf_W_L_c * integral_conc_sucr)))
+
+        # #: Maximal width (m)
+        # Wmax = lamina_Lmax * W_L_ratio
+    # return Wmax
 
 
 def calculate_SSLW(leaf_rank, integral_conc_sucr, optimal_growth_option=False):
@@ -540,7 +589,7 @@ def calculate_internode_distance_to_emerge(ligule_heights, bottom_hiddenzone_hei
     top_ligule_height = max(ligule_heights[ligule_heights['phytomer'] < phytomer_rank]['ligule height'])  # highest previous ligule
     leaf_pseudostem_length = top_ligule_height - bottom_hiddenzone_height
 
-    internode_distance_to_emerge = leaf_pseudostem_length + curr_internode_L
+    internode_distance_to_emerge = leaf_pseudostem_length + curr_internode_L # zhao: note that the 'bottom_hiddenzone_height' includes the 'curr_internode_L', therefore it should be added back here so that the 'internode_distance_to_emerge' correctly represents the distance from the previous ligule height to the previous internode height. BTW the difference between this 'internode_distance_to_emerge' and 'pseudostem' is that 'pseudostem' calculates the distance between previous ligule height to the current internode height, whereas pseudostem calculate distance between the previous ligule height to the previous internode height. 
 
     return max(0, internode_distance_to_emerge)
 

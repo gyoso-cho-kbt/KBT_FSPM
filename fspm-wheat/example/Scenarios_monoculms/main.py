@@ -441,11 +441,10 @@ def main(simulation_length=2000, forced_start_time=0, run_simu=True, run_postpro
     adel_wheat.update_geometry(g)
     if show_3Dplant:
         adel_wheat.plot(g)
-
+        
     # ---------------------------------------------
     # -----      RUN OF THE SIMULATION      -------
     # ---------------------------------------------
-
     if run_simu:
 
         try:
@@ -477,11 +476,13 @@ def main(simulation_length=2000, forced_start_time=0, run_simu=True, run_postpro
 
                         # run FarquharWheat
                         farquharwheat_facade_.run(Ta, ambient_CO2, RH, Ur)
-
+                        
                         for t_elongwheat in range(t_farquharwheat, t_farquharwheat + FARQUHARWHEAT_TIMESTEP, ELONGWHEAT_TIMESTEP):
                             # run ElongWheat
                             Tair, Tsoil = meteo.loc[t_elongwheat, ['air_temperature', 'soil_temperature']]
-                            elongwheat_facade_.run(Tair, Tsoil, option_static=option_static)
+                            # elongwheat_facade_.run(Tair, Tsoil, option_static=option_static)
+                            # zhao: test for optimal growth conditional for excluding the inner effect but depends on purely geometric ratio.
+                            elongwheat_facade_.run(Tair, Tsoil, option_static=option_static, optimal_growth_option=True)
 
                             # Update geometry
                             adel_wheat.update_geometry(g)
@@ -522,6 +523,7 @@ def main(simulation_length=2000, forced_start_time=0, run_simu=True, run_postpro
                                         # TODO: create a function with parameters (where ?)
                                         if (np.nansum(elements_outputs.loc[elements_outputs['element'].isin(['StemElement', 'LeafElement1']), 'green_area']) == 0) or \
                                                 (organs_outputs.loc[organs_outputs['organ'] == 'phloem', 'sucrose'].values[0] / axes_outputs['mstruct'].values[0] < -50):
+                                            print('[main] plant is dead, loop broken')
                                             break
                                 else:
                                     # Continue if CN-Wheat loop wasn't broken because of dead plant.
@@ -1009,6 +1011,6 @@ def main(simulation_length=2000, forced_start_time=0, run_simu=True, run_postpro
 
 
 if __name__ == '__main__':
-    main(simulation_length=2000, forced_start_time=0,
+    main(simulation_length=2500, forced_start_time=0,
          run_simu=True, run_postprocessing=True, generate_graphs=True, run_from_outputs=False,
-         show_3Dplant=True, heterogeneous_canopy=True, METEO_FILENAME="meteo_PAR500.csv")
+         show_3Dplant=False, heterogeneous_canopy=False, METEO_FILENAME="meteo_PAR1500.csv")

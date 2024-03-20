@@ -143,7 +143,6 @@ class GrowthWheatFacade(object):
                 for mtg_metamer_vid in self._shared_mtg.components_iter(mtg_axis_vid):
 
                     mtg_metamer_index = int(self._shared_mtg.index(mtg_metamer_vid))
-
                     mtg_metamer_properties = self._shared_mtg.get_vertex_property(mtg_metamer_vid)
                     if 'hiddenzone' in mtg_metamer_properties:
                         hiddenzone_id = (mtg_plant_index, mtg_axis_label, mtg_metamer_index)
@@ -186,7 +185,6 @@ class GrowthWheatFacade(object):
                                             # Needed later on for CN Wheat calculation. TODO: Should it be in elongwheat_facade instead ? (MG)
                                             growthwheat_element_inputs_dict['green_area'] = mtg_element_properties.get('area')
                                     all_growthwheat_elements_inputs_dict[element_id] = growthwheat_element_inputs_dict
-
         self._simulation.initialize({'hiddenzone': all_growthwheat_hiddenzones_inputs_dict, 'elements': all_growthwheat_elements_inputs_dict,
                                      'roots': all_growthwheat_roots_inputs_dict, 'axes': all_growthwheat_axes_inputs_dict})
 

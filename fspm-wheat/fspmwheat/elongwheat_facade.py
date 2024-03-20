@@ -146,7 +146,6 @@ class ElongWheatFacade(object):
 
                     mtg_metamer_properties = self._shared_mtg.get_vertex_property(mtg_metamer_vid)
                     if 'hiddenzone' in mtg_metamer_properties:
-
                         hiddenzone_id = (mtg_plant_index, mtg_axis_label, mtg_metamer_index)
                         mtg_hiddenzone_properties = mtg_metamer_properties['hiddenzone']
                         elongwheat_hiddenzone_inputs_dict = {}
@@ -168,14 +167,14 @@ class ElongWheatFacade(object):
                             if mtg_hiddenzone_properties['leaf_is_emerged'] and mtg_hiddenzone_properties['leaf_is_growing']:
                                 growing_sheath_length = max(0, mtg_hiddenzone_properties['leaf_L'] - mtg_hiddenzone_properties['lamina_Lmax'])  # TODO: mettre ce calcul ailleurs certainement.
                                 all_elongwheat_length_dict[axis_id][mtg_metamer_index]['sheath'].append(growing_sheath_length)
-                            if mtg_hiddenzone_properties['internode_is_growing']:
+                            if mtg_hiddenzone_properties['internode_is_growing']:   # zhao: only the internode still under growing will be added to the 'cumulated_internode'
                                 elongwheat_cumulated_internode_length[axis_id].append(mtg_hiddenzone_properties['internode_L'])
                                 all_elongwheat_length_dict[axis_id][mtg_metamer_index]['cumulated_internode'].extend(elongwheat_cumulated_internode_length[axis_id])
                             else:
                                 internode_organ_vid = self._shared_mtg.components_at_scale(mtg_metamer_vid, 4)[0]
                                 assert self._shared_mtg.label(internode_organ_vid) == 'internode'
                                 internode_element_labels = [self._shared_mtg.label(internode_element) for internode_element in self._shared_mtg.components_at_scale(internode_organ_vid, 5)]
-                                if internode_element_labels == ['baseElement', 'topElement']:
+                                if internode_element_labels == ['baseElement', 'topElement']: # zhao: the if case is rare hit because a common internode label is ['baseElement', 'HiddenElement', 'StemElement', 'topElement']
                                     all_elongwheat_length_dict[axis_id][mtg_metamer_index]['cumulated_internode'].extend(elongwheat_cumulated_internode_length[axis_id])
 
                     # Organ scale
@@ -211,6 +210,10 @@ class ElongWheatFacade(object):
                                     else:  # only the last internode length is written (case of organs with hidden and visible part)
                                         all_elongwheat_length_dict[axis_id][mtg_metamer_index]['cumulated_internode'].append(mtg_element_properties['length'])
 
+
+        # print('[eleongwheat_facade/_initialize_model] all_elongwheat_elements_dict: {}'.format(all_elongwheat_elements_dict[(1, 'MS', 3, 'blade', 'LeafElement1')]))
+        # print('[eleongwheat_facade/_initialize_model] all_elongwheat_length_dict: {}'.format(all_elongwheat_length_dict))
+        # print('')
         self._simulation.initialize({'hiddenzone': all_elongwheat_hiddenzones_dict, 'elements': all_elongwheat_elements_dict, 'axes': all_elongwheat_SAM_temperature_dict,
                                      'sheath_internode_lengths': all_elongwheat_length_dict})
 
@@ -255,7 +258,7 @@ class ElongWheatFacade(object):
                         continue
                     new_metamer_ids = set(axis_to_metamers_mapping[(mtg_plant_index, mtg_axis_label)]).difference(mtg_metamer_ids)
                     for _ in new_metamer_ids:
-                        self.geometrical_model.add_metamer(self._shared_mtg, self._phytoT, plant=mtg_plant_index, axe=mtg_axis_label)  # Add new metamer with only top and base element
+                        self.geometrical_model.add_metamer(self._shared_mtg, self._phytoT, plant=mtg_plant_index, axe=mtg_axis_label)  # zhao: add new metamer with organ level information and only top and base element for element level.
                     # default value to age property in order to run  update_geometry()
                     for mtg_organ_vid in self._shared_mtg.components_at_scale(mtg_axis_vid, 4):
                         if self._shared_mtg.property('label')[mtg_organ_vid] == 'blade':
