@@ -650,5 +650,5 @@ def generate_graphs():
 
 
 if __name__ == '__main__':
-    main(1200, run_simu=True, make_graphs=True)
+    main(600, run_simu=True, make_graphs=True)
     # main(20, run_simu=True, make_graphs=True)

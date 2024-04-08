@@ -1,12 +1,16 @@
-Metadata-Version: 1.1
+Metadata-Version: 2.1
 Name: Elong-Wheat
 Version: 2.0
 Summary: Model of leaf elongation for wheat
 Home-page: https://sourcesup.renater.fr/projects/elong-wheat/
+Download-URL: https://sourcesup.renater.fr/frs/download.php/file/5704/elongwheat.zip
 Author: M.Gauthier, C.Chambon, R.Barillot
 Author-email: camille.chambon@inra.fr, romain.barillot@inra.fr
 License: CeCILL-C
-Download-URL: https://sourcesup.renater.fr/frs/download.php/file/5704/elongwheat.zip
-Description: A mechanistic model of leaf elongation for wheat that accounts for the CN status
 Keywords: functional-structural plant model,wheat,leaf growth,morphogenesis,trophic status,carbon,nitrogen,metabolism
-Platform: UNKNOWN
+License-File: LICENSE
+License-File: AUTHORS
+Requires-Dist: numpy
+Requires-Dist: pandas
+
+A mechanistic model of leaf elongation for wheat that accounts for the CN status

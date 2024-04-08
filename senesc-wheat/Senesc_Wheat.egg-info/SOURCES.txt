@@ -1,3 +1,5 @@
+AUTHORS
+LICENSE
 README.rst
 setup.cfg
 setup.py

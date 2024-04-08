@@ -155,7 +155,7 @@ def calculate_ligule_height(sheath_internode_length, all_element_inputs, SAM_id,
     for phytomer_id, lengths in sheath_internode_length.items():
         lamina_id = SAM_id + (phytomer_id, 'blade', 'LeafElement1')
 
-        if lamina_id in all_element_inputs.keys() and not all_element_inputs[lamina_id]['is_growing']:   # zhao: the leaf is end of growing.
+        if lamina_id in all_element_inputs.keys() and not all_element_inputs[lamina_id]['is_growing']:   # zhao: the lamina is end of growing.
             ligule_height = sum(lengths['sheath'] + lengths['cumulated_internode'])
             ligule_height_df = pd.DataFrame([(SAM_id, phytomer_id, ligule_height)], columns=list(all_ligule_height_df))
             all_ligule_height_df = pd.concat((all_ligule_height_df, ligule_height_df))
@@ -589,7 +589,7 @@ def calculate_internode_distance_to_emerge(ligule_heights, bottom_hiddenzone_hei
     top_ligule_height = max(ligule_heights[ligule_heights['phytomer'] < phytomer_rank]['ligule height'])  # highest previous ligule
     leaf_pseudostem_length = top_ligule_height - bottom_hiddenzone_height
 
-    internode_distance_to_emerge = leaf_pseudostem_length + curr_internode_L # zhao: note that the 'bottom_hiddenzone_height' includes the 'curr_internode_L', therefore it should be added back here so that the 'internode_distance_to_emerge' correctly represents the distance from the previous ligule height to the previous internode height. BTW the difference between this 'internode_distance_to_emerge' and 'pseudostem' is that 'pseudostem' calculates the distance between previous ligule height to the current internode height, whereas pseudostem calculate distance between the previous ligule height to the previous internode height. 
+    internode_distance_to_emerge = leaf_pseudostem_length + curr_internode_L # zhao: note that the 'bottom_hiddenzone_height' includes the 'curr_internode_L', therefore it should be added back here so that the 'internode_distance_to_emerge' correctly represents the distance from the previous ligule height to the previous internode height. BTW the difference between this 'internode_distance_to_emerge' and 'pseudostem' is that 'pseudostem' calculates the distance between previous ligule height to the current internode height, whereas 'internode_distance_to_emerge' calculate distance between the previous ligule height to the previous internode height. 
 
     return max(0, internode_distance_to_emerge)
 
