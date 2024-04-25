@@ -400,6 +400,10 @@ def main(stop_time, run_simu=True, make_graphs=True):
         forced_max_protein_elements = {(1, 'MS', 9, 'blade', 'LeafElement1'), (1, 'MS', 10, 'blade', 'LeafElement1'), (1, 'MS', 11, 'blade', 'LeafElement1'), (2, 'MS', 9, 'blade', 'LeafElement1'),
                                        (2, 'MS', 10, 'blade', 'LeafElement1'), (2, 'MS', 11, 'blade', 'LeafElement1')}
 
+        # zhao: update the geometric model based on loaded data
+        g = adel_wheat.update_geometry(g)
+
+
         # define the start and the end of the whole simulation (in hours)
         start_time = 0
         stop_time = stop_time
@@ -450,7 +454,6 @@ def main(stop_time, run_simu=True, make_graphs=True):
                             caribu_facade_.update_shared_dataframes({'PARa': aggregated_PARa})
                             # run FarquharWheat
                             print('t farquhar is {}'.format(t_farquharwheat))
-                            print('[farquhar/main] height_canopy: {}'.format(g.property('height_canopy')))
                             farquharwheat_facade_.run(Tair, ambient_CO2, RH, Ur)
 
                             for t_cnwheat in range(t_farquharwheat, t_farquharwheat + farquharwheat_ts, cnwheat_ts):

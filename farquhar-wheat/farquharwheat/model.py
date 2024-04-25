@@ -55,9 +55,9 @@ def _organ_temperature(w, z, Zh, Ur, PAR, gsw, Ta, Ts, RH, organ_name):
         rbh = parameters.rhb_blade_A * sqrt(w / u)  #: Case of horizontal planes submitted to forced convection
     else:
         rbh = w / (parameters.rhb_other_A * ((u * w) / parameters.rhb_other_B) ** parameters.rhb_other_C)  #: Case of vertical cylinders submitted to forced convection
-
     #: Turbulence resistance to heat (s m-1)
     ra = 1 / (parameters.K ** parameters.ra_expo * Ur) * (log((parameters.ZR - d) / Zo)) ** parameters.ra_expo  #: Aerodynamic resistance integrated from zr to z0 + d
+
     #: Net absorbed radiation Rn (PAR and NIR, J m-2 s-1)
     RGa = (PAR * parameters.PARa_to_RGa) / parameters.Watt_to_PPFD  #: Global absorbed radiation by organ (J m-2 s-1).
     es_Ta = parameters.s_C * exp((parameters.s_B * Ta) / (parameters.s_A + Ta))  #: Saturated vapour pressure of the air (kPa), Ta in degree Celsius
@@ -386,7 +386,6 @@ def run(surfacic_nitrogen, NSC_Retroinhibition, surfacic_NSC, width, height, PAR
         # New value of Ts
         Ts, Tr = _organ_temperature(width, height, height_canopy, Ur, PAR, gsw, Ta, Ts, RH, organ_name) # Ts is highly non-linear with Ur especially when Ur is small, and become constant when Ur is large. Exponentially w.r.t gsw, linear (mono-decrease) with the input Ts, linear w.r.t Ta, linear w.r.t RH, non-linear with width
         count += 1
-
         if count >= 30:  # TODO: test a faire? Semble prendre du tps de calcul
             if abs((Ci - prec_Ci) / prec_Ci) >= parameters.DELTA_CONVERGENCE:
                 print('{}, Ci cannot converge, prec_Ci= {}, Ci= {}'.format(organ_name, prec_Ci, Ci))

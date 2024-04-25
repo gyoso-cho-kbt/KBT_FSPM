@@ -156,10 +156,12 @@ class FarquharWheatFacade(object):
                             all_farquharwheat_elements_inputs_dict[element_id] = farquharwheat_element_inputs_dict
 
                 farquharwheat_axis_inputs_dict['height_canopy'] = np.nanmax(np.array(height_element_list, dtype=np.float64))
+                print('[farquhar_facade] height_canopy: {}'.format(farquharwheat_axis_inputs_dict['height_canopy']))
+                
                 if np.isnan(farquharwheat_axis_inputs_dict['height_canopy']) or (farquharwheat_axis_inputs_dict['height_canopy'] is None):
                     farquharwheat_axis_inputs_dict['height_canopy'] = parameters.AxisDefaultProperties().__dict__['height']
                 all_farquharwheat_axes_inputs_dict[axis_id] = farquharwheat_axis_inputs_dict
-
+                
         self._simulation.initialize({'elements': all_farquharwheat_elements_inputs_dict, 'axes': all_farquharwheat_axes_inputs_dict})
 
     def _update_shared_MTG(self, farquharwheat_data_dict):
@@ -185,6 +187,16 @@ class FarquharWheatFacade(object):
                         mtg_organ_label = self._shared_mtg.label(mtg_organ_vid)
                         if mtg_organ_label not in FARQUHARWHEAT_ORGANS_NAMES:
                             continue
+                        # zhao: also update organ level information for it will be used in the 3D geometry model
+                        organ_id = (mtg_plant_index, mtg_axis_label, mtg_metamer_index, mtg_organ_label)
+                        organ_visible_length = farquharwheat_data_dict['elements'].get(organ_id + ('LeafElement1',), {}).get('length', 0.) + farquharwheat_data_dict['elements'].get(organ_id + ('StemElement',), {}).get('length',0.)
+                        if organ_visible_length > 0: # zhao: only update those are valid
+                            self._shared_mtg.property('visible_length')[mtg_organ_vid] = organ_visible_length
+                        organ_hidden_length = farquharwheat_data_dict['elements'].get(organ_id + ('HiddenElement',), {}).get('length', 0.)
+                        total_organ_length = organ_hidden_length + organ_visible_length
+                        if total_organ_length > 0: # zhao: only update those are valid
+                            self._shared_mtg.property('length')[mtg_organ_vid] = total_organ_length
+                        ####################################### zhao ##############################################
                         for mtg_element_vid in self._shared_mtg.components_iter(mtg_organ_vid):
                             mtg_element_label = self._shared_mtg.label(mtg_element_vid)
                             element_id = (mtg_plant_index, mtg_axis_label, mtg_metamer_index, mtg_organ_label, mtg_element_label)

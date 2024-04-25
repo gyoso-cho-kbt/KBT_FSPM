@@ -100,6 +100,8 @@ class Simulation(object):
             axe_label = axis_id[1]
             if axe_label != 'MS':  # Calculation only for the main stem
                 continue
+            elif element_inputs['width']<=0: # zhao: filter out those element without valid width number
+                continue
             # In case it is an HiddenElement, we need temperature calculation. Cases of Visible Element without geomtry proprety (because too small) don't have photosynthesis calculation neither.
             if element_inputs['height'] is None:
                 Ag, An, Rd, Tr, gs = 0., 0., 0., 0., 0.
@@ -107,7 +109,6 @@ class Simulation(object):
             else:
                 PARa = element_inputs['PARa']  #: Amount of absorbed PAR per unit area (µmol m-2 s-1)
                 height_canopy = self.inputs['axes'][axis_id]['height_canopy']
-
                 if parameters.SurfacicProteins:
                     surfacic_photosynthetic_proteins = model.calculate_surfacic_photosynthetic_proteins(element_inputs['proteins'],
                                                                                                         element_inputs['green_area'])
@@ -138,7 +139,7 @@ class Simulation(object):
                                                        element_inputs['width'],
                                                        element_inputs['height'],
                                                        PARa, Ta, ambient_CO2,
-                                                       RH, Ur, organ_label, height_canopy)
+                                                       RH, Ur, organ_label, height_canopy)                               
                 else:
                     #:  Computation at primitive scale
                     Ag_prim_list = []

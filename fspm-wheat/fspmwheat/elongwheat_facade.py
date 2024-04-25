@@ -328,6 +328,7 @@ class ElongWheatFacade(object):
 
                         # Update of organ scale from elements dataframe
                         # Organ length should be correct in order to get correct lengths at both organ and element scales after performing the update_geometry()
+                        # zhao: this organ update using element data is crucial for the 3D model contruction, since the 3D model construction uses the organ level information. 
                         organ_visible_length = all_elongwheat_elements_data_dict.get(organ_id + ('LeafElement1',), {}).get('length', 0.) + \
                                                all_elongwheat_elements_data_dict.get(organ_id + ('StemElement',), {}).get('length', 0.)
                         self._shared_mtg.property('visible_length')[mtg_organ_vid] = organ_visible_length
