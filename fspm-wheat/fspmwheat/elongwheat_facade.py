@@ -4,6 +4,9 @@ import numpy as np
 from elongwheat import converter, simulation
 from fspmwheat import tools
 
+import sys # zhao: import for debug information
+import os
+import logging
 """
     fspmwheat.elongwheat_facade
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -64,7 +67,9 @@ class ElongWheatFacade(object):
         :param bool update_shared_df: If `True`  update the shared dataframes at init and at each run (unless stated otherwise)
         :param bool option_static: Whether the model should be run for a static plant architecture
         """
-
+        self.logger = logging.getLogger(__name__)
+        logging.basicConfig(filename=r'C:\Users\gyoso.cho.TIRD\source\WheatFspm\WheatFspm\fspm-wheat\example\2024_kubota_Scenarios_monoculms\elongation.log', level=logging.INFO, filemode='w+')
+        
         self._shared_mtg = shared_mtg  #: the MTG shared between all models
 
         self._simulation = simulation.Simulation(delta_t=delta_t, update_parameters=update_parameters)  #: the simulator to use to run the model
@@ -82,7 +87,7 @@ class ElongWheatFacade(object):
         if self._update_shared_df:
             self._update_shared_dataframes(model_hiddenzones_inputs_df, model_elements_inputs_df, model_axes_inputs_df)
 
-    def run(self, Tair, Tsoil, option_static=False, optimal_growth_option=False, update_shared_df=None):
+    def run(self, Tair, Tsoil, option_static=False, optimal_growth_option=False, update_shared_df=None, measured_leaf_length=False):
         """
         Run the model and update the MTG and the dataframes shared between all models.
 
@@ -93,9 +98,9 @@ class ElongWheatFacade(object):
         :param bool update_shared_df: if 'True', update the shared dataframes at this time step.
         """
         self._initialize_model()
-        self._simulation.run(Tair, Tsoil, optimal_growth_option)
+        self._simulation.run(Tair, Tsoil, optimal_growth_option, measured_leaf_length)
         self._update_shared_MTG(self._simulation.outputs['hiddenzone'], self._simulation.outputs['elements'], self._simulation.outputs['axes'], option_static)
-
+            
         if update_shared_df or (update_shared_df is None and self._update_shared_df):
             elongwheat_hiddenzones_outputs_df, elongwheat_elements_outputs_df, elongwheat_SAM_temperature_outputs_df = converter.to_dataframes(self._simulation.outputs)
             self._update_shared_dataframes(elongwheat_hiddenzones_outputs_df, elongwheat_elements_outputs_df, elongwheat_SAM_temperature_outputs_df)
@@ -109,110 +114,117 @@ class ElongWheatFacade(object):
         all_elongwheat_SAM_temperature_dict = {}
         all_elongwheat_length_dict = {}
         elongwheat_cumulated_internode_length = {}
+        try:
+            for mtg_plant_vid in self._shared_mtg.components_iter(self._shared_mtg.root):
+                mtg_plant_index = int(self._shared_mtg.index(mtg_plant_vid))
 
-        for mtg_plant_vid in self._shared_mtg.components_iter(self._shared_mtg.root):
-            mtg_plant_index = int(self._shared_mtg.index(mtg_plant_vid))
+                # Axis scale
+                for mtg_axis_vid in self._shared_mtg.components_iter(mtg_plant_vid):
+                    mtg_axis_label = self._shared_mtg.label(mtg_axis_vid)
+                    # if mtg_axis_label != 'MS':
+                    #     continue
+                    mtg_axis_properties = self._shared_mtg.get_vertex_property(mtg_axis_vid)
 
-            # Axis scale
-            for mtg_axis_vid in self._shared_mtg.components_iter(mtg_plant_vid):
-                mtg_axis_label = self._shared_mtg.label(mtg_axis_vid)
-                # if mtg_axis_label != 'MS':
-                #     continue
-                mtg_axis_properties = self._shared_mtg.get_vertex_property(mtg_axis_vid)
+                    axis_id = (mtg_plant_index, mtg_axis_label)
+                    elongwheat_SAM_temperature_inputs_dict = {}
 
-                axis_id = (mtg_plant_index, mtg_axis_label)
-                elongwheat_SAM_temperature_inputs_dict = {}
+                    is_valid_axis = True
+                    for axis_input_name in simulation.AXIS_INPUTS:
+                        if axis_input_name in mtg_axis_properties:
+                            # use the input from the MTG
+                            elongwheat_SAM_temperature_inputs_dict[axis_input_name] = mtg_axis_properties[axis_input_name]
+                        else:
+                            is_valid_axis = False
+                            break
+                    if is_valid_axis:
+                        all_elongwheat_SAM_temperature_dict[axis_id] = elongwheat_SAM_temperature_inputs_dict
+                        # Complete dict of lengths
+                        all_elongwheat_length_dict[axis_id] = {}
+                        #################### zhao: alter the 'nb_leaves' to the greater one between the 'nb_leaves' and 'current_nb_leaves' for keeping track on the current phytomer number as well as being able to set input for any phytomer ###############################################
+                        # for i in range(mtg_axis_properties['nb_leaves']):
+                        for i in range(max(mtg_axis_properties['nb_leaves'], mtg_axis_properties['current_nb_leaves'])):
+                        ##############################################################################################################
+                            all_elongwheat_length_dict[axis_id][i + 1] = {'sheath': [], 'cumulated_internode': []}
+                        elongwheat_cumulated_internode_length[axis_id] = []
 
-                is_valid_axis = True
-                for axis_input_name in simulation.AXIS_INPUTS:
-                    if axis_input_name in mtg_axis_properties:
-                        # use the input from the MTG
-                        elongwheat_SAM_temperature_inputs_dict[axis_input_name] = mtg_axis_properties[axis_input_name]
-                    else:
-                        is_valid_axis = False
-                        break
-                if is_valid_axis:
-                    all_elongwheat_SAM_temperature_dict[axis_id] = elongwheat_SAM_temperature_inputs_dict
-                    # Complete dict of lengths
-                    all_elongwheat_length_dict[axis_id] = {}
-                    for i in range(mtg_axis_properties['nb_leaves']):
-                        all_elongwheat_length_dict[axis_id][i + 1] = {'sheath': [], 'cumulated_internode': []}
-                    elongwheat_cumulated_internode_length[axis_id] = []
+                    # Metamer scale
+                    for mtg_metamer_vid in self._shared_mtg.components_iter(mtg_axis_vid):
+                        mtg_metamer_index = int(self._shared_mtg.index(mtg_metamer_vid))
+                        elongwheat_hiddenzone_data_from_mtg_organs_data = {}  # TODO: a voir si c'est toujours utile
 
-                # Metamer scale
-                for mtg_metamer_vid in self._shared_mtg.components_iter(mtg_axis_vid):
-                    mtg_metamer_index = int(self._shared_mtg.index(mtg_metamer_vid))
-                    elongwheat_hiddenzone_data_from_mtg_organs_data = {}  # TODO: a voir si c'est toujours utile
+                        mtg_metamer_properties = self._shared_mtg.get_vertex_property(mtg_metamer_vid)
+                        if 'hiddenzone' in mtg_metamer_properties:
+                            hiddenzone_id = (mtg_plant_index, mtg_axis_label, mtg_metamer_index)
+                            mtg_hiddenzone_properties = mtg_metamer_properties['hiddenzone']
+                            elongwheat_hiddenzone_inputs_dict = {}
 
-                    mtg_metamer_properties = self._shared_mtg.get_vertex_property(mtg_metamer_vid)
-                    if 'hiddenzone' in mtg_metamer_properties:
-
-                        hiddenzone_id = (mtg_plant_index, mtg_axis_label, mtg_metamer_index)
-                        mtg_hiddenzone_properties = mtg_metamer_properties['hiddenzone']
-                        elongwheat_hiddenzone_inputs_dict = {}
-
-                        is_valid_hiddenzone = True
-                        for hiddenzone_input_name in simulation.HIDDENZONE_INPUTS:
-                            if hiddenzone_input_name in mtg_hiddenzone_properties:
-                                # use the input from the MTG
-                                elongwheat_hiddenzone_inputs_dict[hiddenzone_input_name] = mtg_hiddenzone_properties[hiddenzone_input_name]
-                            elif hiddenzone_input_name in elongwheat_hiddenzone_data_from_mtg_organs_data:
-                                elongwheat_hiddenzone_inputs_dict[hiddenzone_input_name] = elongwheat_hiddenzone_data_from_mtg_organs_data[hiddenzone_input_name]
-                            else:
-                                print('Invalid hiddenzone {}: input {} is missing'.format(hiddenzone_id, hiddenzone_input_name))
-                                is_valid_hiddenzone = False
-                                break
-                        if is_valid_hiddenzone:
-                            all_elongwheat_hiddenzones_dict[hiddenzone_id] = elongwheat_hiddenzone_inputs_dict
-                            # Complete dict of lengths
-                            if mtg_hiddenzone_properties['leaf_is_emerged'] and mtg_hiddenzone_properties['leaf_is_growing']:
-                                growing_sheath_length = max(0, mtg_hiddenzone_properties['leaf_L'] - mtg_hiddenzone_properties['lamina_Lmax'])  # TODO: mettre ce calcul ailleurs certainement.
-                                all_elongwheat_length_dict[axis_id][mtg_metamer_index]['sheath'].append(growing_sheath_length)
-                            if mtg_hiddenzone_properties['internode_is_growing']:
-                                elongwheat_cumulated_internode_length[axis_id].append(mtg_hiddenzone_properties['internode_L'])
-                                all_elongwheat_length_dict[axis_id][mtg_metamer_index]['cumulated_internode'].extend(elongwheat_cumulated_internode_length[axis_id])
-                            else:
-                                internode_organ_vid = self._shared_mtg.components_at_scale(mtg_metamer_vid, 4)[0]
-                                assert self._shared_mtg.label(internode_organ_vid) == 'internode'
-                                internode_element_labels = [self._shared_mtg.label(internode_element) for internode_element in self._shared_mtg.components_at_scale(internode_organ_vid, 5)]
-                                if internode_element_labels == ['baseElement', 'topElement']:
-                                    all_elongwheat_length_dict[axis_id][mtg_metamer_index]['cumulated_internode'].extend(elongwheat_cumulated_internode_length[axis_id])
-
-                    # Organ scale
-                    for mtg_organ_vid in self._shared_mtg.components_iter(mtg_metamer_vid):
-                        mtg_organ_label = self._shared_mtg.label(mtg_organ_vid)
-                        mtg_organ_properties = self._shared_mtg.get_vertex_property(mtg_organ_vid)
-                        if np.nan_to_num(self._shared_mtg.property('length').get(mtg_organ_vid, 0)) == 0:
-                            continue
-                        if mtg_organ_label == 'blade':
-                            elongwheat_hiddenzone_data_from_mtg_organs_data['lamina_Lmax'] = mtg_organ_properties['shape_mature_length']
-                            elongwheat_hiddenzone_data_from_mtg_organs_data['leaf_Wmax'] = mtg_organ_properties['shape_max_width']
-                        # Element scale
-                        for mtg_element_vid in self._shared_mtg.components_iter(mtg_organ_vid):
-                            mtg_element_label = self._shared_mtg.label(mtg_element_vid)
-                            mtg_element_properties = self._shared_mtg.get_vertex_property(mtg_element_vid)
-                            if np.nan_to_num(self._shared_mtg.property('length').get(mtg_element_vid, 0)) == 0:
-                                continue
-                            if np.isnan(mtg_element_properties.get('age', 0)):
-                                mtg_element_properties['age'] = 0.
-                            if set(mtg_element_properties).issuperset(simulation.ELEMENT_INPUTS):
-                                elongwheat_element_inputs_dict = {}
-                                for elongwheat_element_input_name in simulation.ELEMENT_INPUTS:
-                                    elongwheat_element_inputs_dict[elongwheat_element_input_name] = mtg_element_properties[elongwheat_element_input_name]
-                                element_id = (mtg_plant_index, mtg_axis_label, mtg_metamer_index, mtg_organ_label, mtg_element_label)
-                                all_elongwheat_elements_dict[element_id] = elongwheat_element_inputs_dict
+                            is_valid_hiddenzone = True
+                            for hiddenzone_input_name in simulation.HIDDENZONE_INPUTS:
+                                if hiddenzone_input_name in mtg_hiddenzone_properties:
+                                    # use the input from the MTG
+                                    elongwheat_hiddenzone_inputs_dict[hiddenzone_input_name] = mtg_hiddenzone_properties[hiddenzone_input_name]
+                                elif hiddenzone_input_name in elongwheat_hiddenzone_data_from_mtg_organs_data:
+                                    elongwheat_hiddenzone_inputs_dict[hiddenzone_input_name] = elongwheat_hiddenzone_data_from_mtg_organs_data[hiddenzone_input_name]
+                                else:
+                                    print('Invalid hiddenzone {}: input {} is missing'.format(hiddenzone_id, hiddenzone_input_name))
+                                    is_valid_hiddenzone = False
+                                    break
+                            if is_valid_hiddenzone:
+                                all_elongwheat_hiddenzones_dict[hiddenzone_id] = elongwheat_hiddenzone_inputs_dict
                                 # Complete dict of lengths
-                                if mtg_organ_label == 'sheath' and not mtg_element_properties['is_growing']:
-                                    all_elongwheat_length_dict[axis_id][mtg_metamer_index]['sheath'].append(mtg_element_properties['length'])
-                                elif mtg_organ_label == 'internode' and not mtg_element_properties['is_growing']:  # This algo won't copy previous internode length for a phytomer without internode
-                                    elongwheat_cumulated_internode_length[axis_id].append(mtg_element_properties['length'])
-                                    if all_elongwheat_length_dict[axis_id][mtg_metamer_index]['cumulated_internode'] is None:  # if empty for that phytomer, the list of all phytomer lengths is
+                                if mtg_hiddenzone_properties['leaf_is_emerged'] and mtg_hiddenzone_properties['leaf_is_growing']:
+                                    growing_sheath_length = max(0, mtg_hiddenzone_properties['leaf_L'] - mtg_hiddenzone_properties['lamina_Lmax'])  # TODO: mettre ce calcul ailleurs certainement.
+                                    all_elongwheat_length_dict[axis_id][mtg_metamer_index]['sheath'].append(growing_sheath_length)
+                                if mtg_hiddenzone_properties['internode_is_growing']:
+                                    elongwheat_cumulated_internode_length[axis_id].append(mtg_hiddenzone_properties['internode_L'])
+                                    all_elongwheat_length_dict[axis_id][mtg_metamer_index]['cumulated_internode'].extend(elongwheat_cumulated_internode_length[axis_id])
+                                else:
+                                    internode_organ_vid = self._shared_mtg.components_at_scale(mtg_metamer_vid, 4)[0]
+                                    assert self._shared_mtg.label(internode_organ_vid) == 'internode'
+                                    internode_element_labels = [self._shared_mtg.label(internode_element) for internode_element in self._shared_mtg.components_at_scale(internode_organ_vid, 5)]
+                                    if internode_element_labels == ['baseElement', 'topElement']:
                                         all_elongwheat_length_dict[axis_id][mtg_metamer_index]['cumulated_internode'].extend(elongwheat_cumulated_internode_length[axis_id])
-                                    else:  # only the last internode length is written (case of organs with hidden and visible part)
-                                        all_elongwheat_length_dict[axis_id][mtg_metamer_index]['cumulated_internode'].append(mtg_element_properties['length'])
 
-        self._simulation.initialize({'hiddenzone': all_elongwheat_hiddenzones_dict, 'elements': all_elongwheat_elements_dict, 'axes': all_elongwheat_SAM_temperature_dict,
-                                     'sheath_internode_lengths': all_elongwheat_length_dict})
+                        # Organ scale
+                        for mtg_organ_vid in self._shared_mtg.components_iter(mtg_metamer_vid):
+                            mtg_organ_label = self._shared_mtg.label(mtg_organ_vid)
+                            mtg_organ_properties = self._shared_mtg.get_vertex_property(mtg_organ_vid)
+                            if np.nan_to_num(self._shared_mtg.property('length').get(mtg_organ_vid, 0)) == 0:
+                                continue
+                            if mtg_organ_label == 'blade':
+                                elongwheat_hiddenzone_data_from_mtg_organs_data['lamina_Lmax'] = mtg_organ_properties['shape_mature_length']
+                                elongwheat_hiddenzone_data_from_mtg_organs_data['leaf_Wmax'] = mtg_organ_properties['shape_max_width']
+                            # Element scale
+                            for mtg_element_vid in self._shared_mtg.components_iter(mtg_organ_vid):
+                                mtg_element_label = self._shared_mtg.label(mtg_element_vid)
+                                mtg_element_properties = self._shared_mtg.get_vertex_property(mtg_element_vid)
+                                if np.nan_to_num(self._shared_mtg.property('length').get(mtg_element_vid, 0)) == 0:
+                                    continue
+                                if np.isnan(mtg_element_properties.get('age', 0)):
+                                    mtg_element_properties['age'] = 0.
+                                if set(mtg_element_properties).issuperset(simulation.ELEMENT_INPUTS):
+                                    elongwheat_element_inputs_dict = {}
+                                    for elongwheat_element_input_name in simulation.ELEMENT_INPUTS:
+                                        elongwheat_element_inputs_dict[elongwheat_element_input_name] = mtg_element_properties[elongwheat_element_input_name]
+                                    element_id = (mtg_plant_index, mtg_axis_label, mtg_metamer_index, mtg_organ_label, mtg_element_label)
+                                    all_elongwheat_elements_dict[element_id] = elongwheat_element_inputs_dict
+                                    # Complete dict of lengths
+                                    if mtg_organ_label == 'sheath' and not mtg_element_properties['is_growing']:
+                                        all_elongwheat_length_dict[axis_id][mtg_metamer_index]['sheath'].append(mtg_element_properties['length'])
+                                    elif mtg_organ_label == 'internode' and not mtg_element_properties['is_growing']:  # This algo won't copy previous internode length for a phytomer without internode
+                                        elongwheat_cumulated_internode_length[axis_id].append(mtg_element_properties['length'])
+                                        if all_elongwheat_length_dict[axis_id][mtg_metamer_index]['cumulated_internode'] is None:  # if empty for that phytomer, the list of all phytomer lengths is
+                                            all_elongwheat_length_dict[axis_id][mtg_metamer_index]['cumulated_internode'].extend(elongwheat_cumulated_internode_length[axis_id])
+                                        else:  # only the last internode length is written (case of organs with hidden and visible part)
+                                            all_elongwheat_length_dict[axis_id][mtg_metamer_index]['cumulated_internode'].append(mtg_element_properties['length'])
+
+            self._simulation.initialize({'hiddenzone': all_elongwheat_hiddenzones_dict, 'elements': all_elongwheat_elements_dict, 'axes': all_elongwheat_SAM_temperature_dict, 'sheath_internode_lengths': all_elongwheat_length_dict})
+        except Exception as ex:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            print(message, fname, exc_tb.tb_lineno)
 
     def _update_shared_MTG(self, all_elongwheat_hiddenzones_data_dict, all_elongwheat_elements_data_dict, all_elongwheat_axes_data_dict, option_static=False):
         """
@@ -254,6 +266,7 @@ class ElongWheatFacade(object):
                     if (mtg_plant_index, mtg_axis_label) not in axis_to_metamers_mapping:
                         continue
                     new_metamer_ids = set(axis_to_metamers_mapping[(mtg_plant_index, mtg_axis_label)]).difference(mtg_metamer_ids)
+                    self.logger.info('adding new metamer: {}'.format(new_metamer_ids))
                     for _ in new_metamer_ids:
                         self.geometrical_model.add_metamer(self._shared_mtg, self._phytoT, plant=mtg_plant_index, axe=mtg_axis_label)  # Add new metamer with only top and base element
                     # default value to age property in order to run  update_geometry()
@@ -274,7 +287,7 @@ class ElongWheatFacade(object):
                 if axis_id in all_elongwheat_axes_data_dict:
                     elongwheat_axis_data_dict = all_elongwheat_axes_data_dict[axis_id]
                     for axis_data_name, axis_data_value in elongwheat_axis_data_dict.items():
-                        self._shared_mtg.property(axis_data_name)[mtg_axis_vid] = axis_data_value
+                        self._shared_mtg.property(axis_data_name)[mtg_axis_vid] = axis_data_value # zhao: note the current leave number will be updated to the MTG here.
 
                 if option_static:
                     continue

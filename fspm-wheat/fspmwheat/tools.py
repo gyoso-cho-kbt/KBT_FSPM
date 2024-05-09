@@ -1,5 +1,6 @@
 # -*- coding: latin-1 -*-
 
+import sys # zhao: import for debug information
 import os
 
 import numpy as np
@@ -20,8 +21,6 @@ from openalea.plantgl.all import Viewer, Vector3
     :license: see LICENSE for details.
 
 """
-
-
 def combine_dataframes_inplace(model_dataframe, shared_column_indexes, shared_dataframe_to_update):
     """Combine `model_dataframe` and `shared_dataframe_to_update` in-place:
 

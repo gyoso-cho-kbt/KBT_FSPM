@@ -156,7 +156,7 @@ class FarquharWheatFacade(object):
                             all_farquharwheat_elements_inputs_dict[element_id] = farquharwheat_element_inputs_dict
 
                 farquharwheat_axis_inputs_dict['height_canopy'] = np.nanmax(np.array(height_element_list, dtype=np.float64))
-                print('[farquhar_facade] height_canopy: {}'.format(farquharwheat_axis_inputs_dict['height_canopy']))
+                # print('[farquhar_facade] height_canopy: {}'.format(farquharwheat_axis_inputs_dict['height_canopy']))
                 
                 if np.isnan(farquharwheat_axis_inputs_dict['height_canopy']) or (farquharwheat_axis_inputs_dict['height_canopy'] is None):
                     farquharwheat_axis_inputs_dict['height_canopy'] = parameters.AxisDefaultProperties().__dict__['height']
