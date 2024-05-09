@@ -5,6 +5,8 @@ from __future__ import division  # use "//" to do integer division
 from farquharwheat import model
 from farquharwheat import parameters
 
+import sys # zhao: import for debug information
+import os
 """
     farquharwheat.simulation
     ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -92,73 +94,83 @@ class Simulation(object):
 
         self.outputs.update({inputs_type: {} for inputs_type in self.inputs['elements'].keys()})
 
-        for (element_id, element_inputs) in self.inputs['elements'].items():
+        try:
+            for (element_id, element_inputs) in self.inputs['elements'].items():
 
-            axis_id = element_id[:2]
-            organ_label = element_id[3]
+                axis_id = element_id[:2]
+                organ_label = element_id[3]
 
-            axe_label = axis_id[1]
-            if axe_label != 'MS':  # Calculation only for the main stem
-                continue
-            elif element_inputs['width']<=0: # zhao: filter out those element without valid width number
-                continue
-            # In case it is an HiddenElement, we need temperature calculation. Cases of Visible Element without geomtry proprety (because too small) don't have photosynthesis calculation neither.
-            if element_inputs['height'] is None:
-                Ag, An, Rd, Tr, gs = 0., 0., 0., 0., 0.
-                Ts = self.inputs['axes'][axis_id]['SAM_temperature']
-            else:
-                PARa = element_inputs['PARa']  #: Amount of absorbed PAR per unit area (µmol m-2 s-1)
-                height_canopy = self.inputs['axes'][axis_id]['height_canopy']
-                if parameters.SurfacicProteins:
-                    surfacic_photosynthetic_proteins = model.calculate_surfacic_photosynthetic_proteins(element_inputs['proteins'],
-                                                                                                        element_inputs['green_area'])
-
-                    surfacic_nitrogen = model.calculate_surfacic_nonstructural_nitrogen_Farquhar(surfacic_photosynthetic_proteins)
-
+                axe_label = axis_id[1]
+                if axe_label != 'MS':  # Calculation only for the main stem
+                    continue
+                elif element_inputs['width'] is None: # zhao: filter out those element without valid width number
+                    continue
+                elif element_inputs['width']<=0:
+                    continue
+                # In case it is an HiddenElement, we need temperature calculation. Cases of Visible Element without geomtry proprety (because too small) don't have photosynthesis calculation neither.
+                if element_inputs['height'] is None:
+                    Ag, An, Rd, Tr, gs = 0., 0., 0., 0., 0.
+                    Ts = self.inputs['axes'][axis_id]['SAM_temperature']
                 else:
-                    surfacic_nitrogen = model.calculate_surfacic_nitrogen(element_inputs['nitrates'],
-                                                                          element_inputs['amino_acids'],
-                                                                          element_inputs['proteins'],
-                                                                          element_inputs['Nstruct'],
-                                                                          element_inputs['green_area'])
+                    PARa = element_inputs['PARa']  #: Amount of absorbed PAR per unit area (µmol m-2 s-1)
+                    height_canopy = self.inputs['axes'][axis_id]['height_canopy']
+                    if parameters.SurfacicProteins:
+                        surfacic_photosynthetic_proteins = model.calculate_surfacic_photosynthetic_proteins(element_inputs['proteins'],
+                                                                                                            element_inputs['green_area'])
 
-                surfacic_NSC = model.calculate_surfacic_WSC(element_inputs['sucrose'], element_inputs['starch'], element_inputs['fructan'], element_inputs['green_area'])
+                        surfacic_nitrogen = model.calculate_surfacic_nonstructural_nitrogen_Farquhar(surfacic_photosynthetic_proteins)
 
-                if not parameters.prim_scale:
-                    #:  Computation at organ scale
-                    # Ag, An, Rd, Tr, Ts, gs = model.run(surfacic_nitrogen,
-                                                       # parameters.NSC_Retroinhibition,
-                                                       # surfacic_NSC,
-                                                       # element_inputs['width'],
-                                                       # element_inputs['height'],
-                                                       # PARa, Ta, ambient_CO2,
-                                                       # RH, Ur, organ_label, height_canopy)
-                    Ag, An, Rd, Tr, Ts, gs = model.run(surfacic_nitrogen,
-                                                       parameters.NSC_Retroinhibition,
-                                                       surfacic_NSC,
-                                                       element_inputs['width'],
-                                                       element_inputs['height'],
-                                                       PARa, Ta, ambient_CO2,
-                                                       RH, Ur, organ_label, height_canopy)                               
-                else:
-                    #:  Computation at primitive scale
-                    Ag_prim_list = []
-                    for PARa_prim in element_inputs['PARa_prim']:  #: Amount of absorbed PAR per unit area (µmol m-2 s-1)
-                        Ag_prim, An, Rd, Tr, Ts, gs = model.run(surfacic_nitrogen,
-                                                                parameters.NSC_Retroinhibition,
-                                                                surfacic_NSC,
-                                                                element_inputs['width'],
-                                                                element_inputs['height'],
-                                                                PARa_prim, Ta, ambient_CO2,
-                                                                RH, Ur, organ_label, height_canopy)
-                        Ag_prim_list.append(Ag_prim)
-                    if not Ag_prim_list:
-                        Ag = 0
                     else:
-                        Ag = sum([Ag_prim * area_prim for Ag_prim, area_prim in zip(Ag_prim_list, element_inputs['area_prim'])]) / sum(element_inputs['area_prim'])
+                        surfacic_nitrogen = model.calculate_surfacic_nitrogen(element_inputs['nitrates'],
+                                                                              element_inputs['amino_acids'],
+                                                                              element_inputs['proteins'],
+                                                                              element_inputs['Nstruct'],
+                                                                              element_inputs['green_area'])
 
-            element_outputs = {'Ag': Ag, 'An': An, 'Rd': Rd,
-                               'Tr': Tr, 'Ts': Ts, 'gs': gs,
-                               'width': element_inputs['width'], 'height': element_inputs['height']}
+                    surfacic_NSC = model.calculate_surfacic_WSC(element_inputs['sucrose'], element_inputs['starch'], element_inputs['fructan'], element_inputs['green_area'])
 
-            self.outputs[element_id] = element_outputs
+                    if not parameters.prim_scale:
+                        #:  Computation at organ scale
+                        # Ag, An, Rd, Tr, Ts, gs = model.run(surfacic_nitrogen,
+                                                           # parameters.NSC_Retroinhibition,
+                                                           # surfacic_NSC,
+                                                           # element_inputs['width'],
+                                                           # element_inputs['height'],
+                                                           # PARa, Ta, ambient_CO2,
+                                                           # RH, Ur, organ_label, height_canopy)
+                        Ag, An, Rd, Tr, Ts, gs = model.run(surfacic_nitrogen,
+                                                           parameters.NSC_Retroinhibition,
+                                                           surfacic_NSC,
+                                                           element_inputs['width'],
+                                                           element_inputs['height'],
+                                                           PARa, Ta, ambient_CO2,
+                                                           RH, Ur, organ_label, height_canopy)                               
+                    else:
+                        #:  Computation at primitive scale
+                        Ag_prim_list = []
+                        for PARa_prim in element_inputs['PARa_prim']:  #: Amount of absorbed PAR per unit area (µmol m-2 s-1)
+                            Ag_prim, An, Rd, Tr, Ts, gs = model.run(surfacic_nitrogen,
+                                                                    parameters.NSC_Retroinhibition,
+                                                                    surfacic_NSC,
+                                                                    element_inputs['width'],
+                                                                    element_inputs['height'],
+                                                                    PARa_prim, Ta, ambient_CO2,
+                                                                    RH, Ur, organ_label, height_canopy)
+                            Ag_prim_list.append(Ag_prim)
+                        if not Ag_prim_list:
+                            Ag = 0
+                        else:
+                            Ag = sum([Ag_prim * area_prim for Ag_prim, area_prim in zip(Ag_prim_list, element_inputs['area_prim'])]) / sum(element_inputs['area_prim'])
+
+                element_outputs = {'Ag': Ag, 'An': An, 'Rd': Rd,
+                                   'Tr': Tr, 'Ts': Ts, 'gs': gs,
+                                   'width': element_inputs['width'], 'height': element_inputs['height']}
+
+                self.outputs[element_id] = element_outputs
+
+        except Exception as ex:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            print(message, fname, exc_tb.tb_lineno)

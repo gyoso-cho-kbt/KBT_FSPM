@@ -92,13 +92,13 @@ def calculate_cumulated_thermal_time(sum_TT, temperature, delta_teq):
         return sum_TT
 
 
-def calculate_SAM_primodia(status, teq_since_primordium, delta_teq, nb_leaves, cohort_id):
+def calculate_SAM_primodia(status, teq_since_primordium, delta_teq, nb_leaves, cohort_id): 
     """ Update SAM status, leaf number
 
     :param str status: SAM status ('vegetative', if emitting leaf primordia or 'reproductive')
     :param float teq_since_primordium: Time since last primordium initiation (in time equivalent to a reference temperature) (s)
     :param float delta_teq: time increment (in time equivalent to a reference temperature) (s)
-    :param int nb_leaves: Number of leaves already emited by the SAM.
+    :param int nb_leaves: Number of leaves already emited by the SAM. # zhao: note the meaning of parameter 'nb_leaves' has been altered to the 'current_nb_leaves' 
     :param int cohort_id: Corresponding leaf on the Main Stem for the first leaf of a tiller
 
     :return: Number of leaf to be initiated (should be 0 or 1), updated leaf number on the SAM, status, time since last primordium intiation (in time equivalent to a reference temperature, s)
@@ -350,7 +350,7 @@ def calculate_lamina_L(leaf_L, leaf_pseudostem_length, hiddenzone_id, lamina_Lma
                min(lamina_L, lamina_Lmax))  # Minimum length set to 10^-6 m to make sure growth-wheat can run even if the lamina turns back hidden (case when an older sheath elongates faster)
 
 
-def calculate_leaf_Lmax(leaf_Lem_prev): # zhao: this function is only used in the initialization of a new phytomer
+def calculate_leaf_Lmax(leaf_Lem_prev): # zhao: set the maximum value using the measured values
     """ Final leaf length.
 
     :param float leaf_Lem_prev: Leaf length at the emergence of the previous leaf (m)
@@ -358,6 +358,7 @@ def calculate_leaf_Lmax(leaf_Lem_prev): # zhao: this function is only used in th
     :return: Final leaf length (m)
     :rtype: float
     """
+    # print("[elongwheat/model] leaf_Lem_prev {} -> output leaf_Lmax {}".format(leaf_Lem_prev, min(leaf_Lem_prev / Beta_function(0.), parameters.leaf_Lmax_MAX)))
     return min(leaf_Lem_prev / Beta_function(0.), parameters.leaf_Lmax_MAX)
 
 
