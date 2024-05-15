@@ -15,6 +15,20 @@ from alinea.adel.adel_dynamic import AdelDyn
 from cnwheat import tools as cnwheat_tools
 from fspmwheat import cnwheat_facade, farquharwheat_facade, senescwheat_facade, growthwheat_facade, caribu_facade, elongwheat_facade
 
+from openalea.plantgl.all import Viewer, Scene
+from openalea.plantgl.math import Vector3
+from math import radians
+
+# authored by zhao
+# poprogate some property from the reference plant to the plants in the canopy
+def propogate_plant_properties(ref_g, canopy_g, some_property='is_green'):
+    from openalea.mtg import traversal
+    for plant_no in canopy_g.component_roots(0):
+        for ref_no, tar_no in zip(traversal.iter_mtg2(ref_g, 1), traversal.iter_mtg2(canopy_g, plant_no)):
+            if ref_no in ref_g.property(some_property).keys() and tar_no in canopy_g.property(some_property).keys():
+                canopy_g.property(some_property)[tar_no] = ref_g.property(some_property)[ref_no]
+    return canopy_g
+
 # authored by zhao
 # an utility function for adding base/top element into MTG so that the update_geometry function in adel_wheat becomes available.
 def insert_base_top_element(g):
@@ -237,7 +251,7 @@ def calculate_PARa_by_interploation_df(g, Eabs_df, t, PARi):
                                 PARa_element_data_dict[mtg_element_vid] = interplote_func(Eabs_df_grouped.get_group(element_id)['Eabs_init'].iloc[0], Eabs_df_grouped.get_group(element_id)['Eabs_ripen'].iloc[0], t) * PARi
 
     return PARa_element_data_dict
-    
+
 
 
 def calculate_PARa_from_df(g, Eabs_df, PARi, multiple_sources=False, ratio_diffus_PAR=None):
@@ -276,6 +290,24 @@ def calculate_PARa_from_df(g, Eabs_df, PARi, multiple_sources=False, ratio_diffu
 
     return PARa_element_data_dict
 
+# authored by zhao
+# iterate over the leaf elements and stem elements in internode
+# if the green length is shorter than the senesced_length_element
+# then set the 'is_green' to false for display purpose
+def display_seneced_element(g):
+    for vid in g.vertices_iter(5):
+        node = g.node(vid)
+        if node.length and node.length > 0:
+            if node.label.startswith('Leaf') or (node.label.startswith('Stem') and g.node(g.complex(vid)).label.startswith('inter')):
+                senesced_length = node.properties().get('senesced_length_element', 0)
+                green_length = node.length - senesced_length
+                # if green_length<senesced_length:
+                    # node.is_green = False
+                    # print('The {} in {} has senesced'.format(node.label, g.node(g.complex_at_scale(vid,3)).label))
+                node.is_green = min(max(1 - float(senesced_length/node.length), 0.0),1.0)
+    return g
+            
+
 
 def main(stop_time, run_simu=True, make_graphs=True):
     if run_simu:
@@ -292,14 +324,13 @@ def main(stop_time, run_simu=True, make_graphs=True):
         hour_to_second_conversion_factor = 3600
 
         # read adelwheat inputs at t0
-        adel_wheat = AdelDyn(seed=1234, scene_unit='m')
+        adel_wheat = AdelDyn(seed=1234, scene_unit='m', nplants=50, duplicate=5)
         g = adel_wheat.load(dir=ADELWHEAT_INPUTS_DIRPATH)
         
         # added by zhao for test of the utilization function
         g = label_alter_function(insert_base_top_element(g))
         g = adel_wheat.update_geometry(g) # NE FONCTIONNE PAS car MTG non compatible (pas de top et base element)
-        # adel_wheat.plot(g)
-
+        
         # create empty dataframes to shared data between the models
         shared_axes_inputs_outputs_df = pd.DataFrame()
         shared_organs_inputs_outputs_df = pd.DataFrame()
@@ -319,7 +350,7 @@ def main(stop_time, run_simu=True, make_graphs=True):
         senescwheat_axes_inputs_t0 = pd.read_csv(SENESCWHEAT_AXES_INPUTS_FILEPATH)
         senescwheat_elements_inputs_t0 = pd.read_csv(SENESCWHEAT_ELEMENTS_INPUTS_FILEPATH)
         # update_senescwheat_parameters = None
-        update_senescwheat_parameters = {'FRACTION_N_MAX' : {'blade': 0.002, 'stem': 0.00175}} # zhao memo lower the senesce threshold to keep the blade alive.
+        update_senescwheat_parameters = {'FRACTION_N_MAX' : {'blade': 0.002, 'stem': 0.00175}} # zhao: lower the senesce threshold to keep the blade alive.
         # update_senescwheat_parameters = {'FRACTION_N_MAX' : {'blade': 0, 'stem': 0}}
         senescwheat_facade_ = senescwheat_facade.SenescWheatFacade(g,
                                                                    senescwheat_ts * hour_to_second_conversion_factor,
@@ -418,44 +449,41 @@ def main(stop_time, run_simu=True, make_graphs=True):
                                                        shared_soils_inputs_outputs_df)
                                                        
         # define organs for which the variable 'max_proteins' is fixed
-        forced_max_protein_elements = {(1, 'MS', 9, 'blade', 'LeafElement1'), (1, 'MS', 10, 'blade', 'LeafElement1'), (1, 'MS', 11, 'blade', 'LeafElement1'), (2, 'MS', 9, 'blade', 'LeafElement1'),
-                                       (2, 'MS', 10, 'blade', 'LeafElement1'), (2, 'MS', 11, 'blade', 'LeafElement1')}
-
+        # zhao: elements in the 'forced_max_protein_elements' is allowed to senesce.
+        # forced_max_protein_elements = {(1, 'MS', 9, 'blade', 'LeafElement1'), (1, 'MS', 10, 'blade', 'LeafElement1'), (1, 'MS', 11, 'blade', 'LeafElement1'), (2, 'MS', 9, 'blade', 'LeafElement1'),
+                                       # (2, 'MS', 10, 'blade', 'LeafElement1'), (2, 'MS', 11, 'blade', 'LeafElement1')}
+        # zhao: also add internode to senesce                               
+        forced_max_protein_elements = {(1, 'MS', 9, 'blade', 'LeafElement1'), (1, 'MS', 10, 'blade', 'LeafElement1'), (1, 'MS', 11, 'blade', 'LeafElement1')}
 
         # manually set the 'width' according to the measured values
         g.property('width')[197] = 0.0105
         g.property('width')[167+14] = 0.00925
         g.property('width')[151+14] = 0.00775
         g.property('width')[135+14] = 0.00850
-        # g.node(197).properties()['width'] = 0.0105 # width of flag leaf (m)
-        # g.node(167+14).properties()['width'] = 0.00925
-        # g.node(151+14).properties()['width'] = 0.00775
-        # g.node(135+14).properties()['width'] = 0.00850
+        # g.property('shape_max_width')[183+11] = 0.0105
+        # g.property('shape_max_width')[167+11] = 0.00925
+        # g.property('shape_max_width')[151+11] = 0.00775
+        # g.property('shape_max_width')[135+11] = 0.00850
         # sheath
         g.property('width')[183+9] = 0.00330
         g.property('width')[167+9] = 0.00410
         g.property('width')[151+9] = 0.00565
         g.property('width')[135+9] = 0.00620
-        # g.node(183+9).properties()['width'] = 0.00330
-        # g.node(167+9).properties()['width'] = 0.00410
-        # g.node(151+9).properties()['width'] = 0.00565
-        # g.node(135+9).properties()['width'] = 0.00620
+        # g.property('diameter')[183+6] = 0.00330
+        # g.property('diameter')[167+6] = 0.00410
+        # g.property('diameter')[151+6] = 0.00565
+        # g.property('diameter')[135+6] = 0.00620
         #internode
         g.property('width')[183+4] = 0.00330
         g.property('width')[167+4] = 0.00410
         g.property('width')[151+4] = 0.00565
         g.property('width')[135+4] = 0.00620
-        # g.node(183+4).properties()['width'] = 0.00330
-        # g.node(167+4).properties()['width'] = 0.00410
-        # g.node(151+4).properties()['width'] = 0.00565
-        # g.node(135+4).properties()['width'] = 0.00620
+        # g.property('diameter')[183+1] = 0.00330
+        # g.property('diameter')[167+1] = 0.00410
+        # g.property('diameter')[151+1] = 0.00565
+        # g.property('diameter')[135+1] = 0.00620
         
-        print('checking the updated initial values')
-        # print('proteins in blade 11 {} is 219.0421'.format(g.node(181).properties()['proteins']))
-        # print('proteins in blade 12 {} is 198.6155'.format(g.node(197).properties()['proteins']))
-        # print('strucuture in grains {} is 10027.24'.format(g.node(2).properties()['grains']['structure']))
-        # print('ear mstruct {} is 0.21'.format(g.node(206).properties()['mstruct']))
-        print('finish checking intial values')
+        g.property('max_proteins')[197] = 0 # zhao: set the max protein of flag leaf as 0, and because its 'update_max_protein' is also True, senesce (should) not happen to it
         
         # define the start and the end of the whole simulation (in hours)
         start_time = 252   # (h)
@@ -480,8 +508,17 @@ def main(stop_time, run_simu=True, make_graphs=True):
         # run the simulators
         current_time_of_the_system = time.time()
 
+        # zhao: animation settings
+        Viewer.animation(True)
+        radii = 1.4
+        theta = -24  # azimuth angle (Y axis -> X axis)
+        phi = 63     # elevation angle
+        position_vector = Vector3(Vector3.Spherical(radii, radians(theta), radians(phi)))
+        Viewer.camera.setPerspective()
+        Viewer.camera.setPosition(position_vector)
+        Viewer.frameGL.setBgColor(170,170,170)  # default value is (170,170,170)
+        canopy_g = adel_wheat.duplicated(g) # zhao: copy the single plant to create a canopy
         try:
-
             for t_elongwheat in range(start_time, stop_time, elongwheat_ts):  # Only to compute temperature related variable
                 # run ElongWheat
                 print('t elongwheat is {}'.format(t_elongwheat))
@@ -493,11 +530,19 @@ def main(stop_time, run_simu=True, make_graphs=True):
                     print('t senescwheat is {}'.format(t_senescwheat))
                     # zhao: forcelly set the max_protein of blade in phytomer 10 as 0 to activate senesce when t_senescwheat>700
                     if t_senescwheat > 700:
-                        print('[Debug in main.py] element name: {}, max proteins: {}'.format(g.node(165).label, g.node(165).max_proteins))
+                        debug_node = g.node(165)
                         g.node(165).max_proteins = 0
+                    ############# zhao: save the snapshot for animation ######################
+                    if t_senescwheat % 12 == 0:
+                        adel_wheat.plot(canopy_g)
+                        Viewer.saveSnapshot('./animation/{:d}.png'.format(t_senescwheat//12))
+                        Viewer.stop()
                     ######################################################
                     senescwheat_facade_.run(forced_max_protein_elements, postflowering_stages=True, option_static=False)
-
+                    g = display_seneced_element(g)
+                    canopy_g = propogate_plant_properties(g, canopy_g, 'is_green')
+                    
+                    
                     # Test for fully senesced shoot tissues  #TODO: Make the model to work even if the whole shoot is dead but the roots are alived
                     if sum(senescwheat_facade_._shared_elements_inputs_outputs_df['green_area']) <= 0.25E-6:
                         break
@@ -554,6 +599,8 @@ def main(stop_time, run_simu=True, make_graphs=True):
         finally:
             execution_time = int(time.time() - current_time_of_the_system)
             print('\n', 'Simulation run in ', str(datetime.timedelta(seconds=execution_time)))
+            
+            adel_wheat.save(g)
 
             # write all inputs and outputs to CSV files
             all_axes_inputs_outputs = pd.concat(axes_all_data_list, keys=all_simulation_steps)
