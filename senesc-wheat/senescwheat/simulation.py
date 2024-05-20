@@ -106,7 +106,6 @@ class Simulation(object):
         all_elements_inputs = self.inputs['elements']
         all_elements_outputs = self.outputs['elements']
         for element_inputs_id, element_inputs_dict in all_elements_inputs.items():
-
             axe_label = element_inputs_id[1]
             if axe_label != 'MS':  # TODO: Calculation only for the main stem
                 continue
@@ -126,7 +125,7 @@ class Simulation(object):
                 element_outputs_dict['is_over'] = True
             elif not element_inputs_dict['is_growing']:  # element is not growing case
                 update_max_protein = forced_max_protein_elements is None or element_inputs_id not in forced_max_protein_elements # 
-
+                
                 if postflowering_stages:
                     new_green_area, relative_delta_green_area, max_proteins = model.SenescenceModel.calculate_relative_delta_green_area(element_inputs_id[3], element_inputs_dict['green_area'],
                                                                                                                                         element_inputs_dict['proteins'] / element_inputs_dict[
@@ -136,7 +135,7 @@ class Simulation(object):
 
                     # Temporaire
                     new_senesced_length = relative_delta_green_area * (element_inputs_dict['length'] - element_inputs_dict.get('senesced_length_element', 0))
-
+                    
                 else:
                     # Temporaire
                     new_senesced_length, relative_delta_senesced_length, max_proteins = model.SenescenceModel.calculate_relative_delta_senesced_length(element_inputs_id[3],

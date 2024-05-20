@@ -665,7 +665,7 @@ class Simulation(object):
                 raise SimulationRunError(message)
                            
                            
-            # print('[cn-simulation] {}-{}: {}'.format(self.population.plants[0].axes[0].grains.__class__.PARAMETERS.FILLING_INIT, self.population.plants[0].axes[0].grains.__class__.PARAMETERS.FILLING_END, self.population.plants[0].axes[0].grains.age_from_flowering))
+            # print('[cn-simulation] root net influx uptake ratio: {}'.format(self.population.plants[0].axes[0].roots.__class__.PARAMETERS.NET_INFLUX_UPTAKE_RATIO))
             # Re-compute integrative variables
             self.population.calculate_aggregated_variables()           
             if logger.isEnabledFor(logging.DEBUG):

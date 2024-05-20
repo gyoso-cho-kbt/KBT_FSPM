@@ -7,6 +7,7 @@ from alinea.astk.plantgl_utils import get_height  # for height calculation
 from farquharwheat import converter, simulation, parameters
 from fspmwheat import tools
 
+import warnings
 """
     fspmwheat.farquharwheat_facade
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

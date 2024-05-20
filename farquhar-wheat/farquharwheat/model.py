@@ -282,8 +282,12 @@ def calculate_surfacic_nitrogen(nitrates, amino_acids, proteins, Nstruct, green_
     :return: Surfacic nitrogen (g m-2)
     :rtype: float
     """
-    mass_N_tot = (nitrates + amino_acids + proteins) * 1E-6 * parameters.N_MOLAR_MASS + Nstruct
-    return mass_N_tot / green_area
+    ####### zhao: add extra processing when green_area is 0 ############################
+    if green_area == 0:
+        return 0
+    else:
+        mass_N_tot = (nitrates + amino_acids + proteins) * 1E-6 * parameters.N_MOLAR_MASS + Nstruct
+        return mass_N_tot / green_area
 
 
 def calculate_surfacic_nonstructural_nitrogen(nitrates, amino_acids, proteins, green_area):
@@ -366,7 +370,6 @@ def run(surfacic_nitrogen, NSC_Retroinhibition, surfacic_NSC, width, height, PAR
         Tr (mmol m-2 s-1), Ts (°C) and  gsw (mol m-2 s-1)
     :rtype: (float, float, float, float, float, float)
     """
-
     if surfacic_nitrogen is None:
         surfacic_nitrogen = parameters.NA_0
 

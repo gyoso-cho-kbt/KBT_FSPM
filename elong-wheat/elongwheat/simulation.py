@@ -333,19 +333,10 @@ class Simulation(object):
                     total_sheath_L = sheath_hidden_length + self.outputs['elements'][visible_sheath_id]['length']
                     updated_sheath_hidden_length = min(total_sheath_L, leaf_pseudostem_length)
                     updated_sheath_visible_length = max(0, total_sheath_L - updated_sheath_hidden_length)
-                    print('[elongwheat/simulation: {}] sheath length update due to internode elongation'.format(phytomer_id))
                     self.outputs['elements'][hidden_sheath_id]['length'] = updated_sheath_hidden_length
                     self.outputs['elements'][visible_sheath_id]['length'] = updated_sheath_visible_length
 
                 #: Leaf elongation
-                ########################################### zhao: debug print out ################################################
-                print('[elongwheat/simulation: {}] leaf_is_growing:{}, previous_leaf_emereged:{}, leaf_L:{}, leaf_Lmax:{}, pesudostem:{}, age:{}'.format(phytomer_id, curr_hiddenzone_outputs['leaf_is_growing'], prev_leaf_emerged, curr_hiddenzone_outputs['leaf_L'], curr_hiddenzone_outputs['leaf_Lmax'], curr_hiddenzone_outputs['leaf_pseudostem_length'], hiddenzone_inputs['leaf_pseudo_age'] ))
-                
-                # zhao: curr_hiddenzone_outputs['leaf_is_growing'] will be set as false in the following 3 cases:
-                #   1. extreme stress
-                #   2. hidden_lamina_L > 0 : leaf_L reaches its maximum while lamina does not yet.
-                #   3. leaf_L >= curr_hiddenzone_outputs['leaf_Lmax'], i.e. the normal case.
-                ##################################################################################################################
                 if curr_hiddenzone_outputs['leaf_is_growing']:
                     if leaf_pseudostem_length < 0:
                         warnings.warn('Pseudostem length of {} decreased while leaf growing.'.format(hiddenzone_id))

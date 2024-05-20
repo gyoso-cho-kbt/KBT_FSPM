@@ -16,6 +16,9 @@ from farquharwheat import parameters
 
 """
 
+import logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename=r'C:\Users\gyoso.cho.TIRD\source\WheatFspm\WheatFspm\fspm-wheat\example\NEMA\Measured_Value\mylog.log', level=logging.INFO, filemode='w')
 
 class SimulationError(Exception):
     pass
@@ -94,6 +97,10 @@ class Simulation(object):
 
         for (element_id, element_inputs) in self.inputs['elements'].items():
 
+            ########## zhao: add assertion for width because some lower phytomers are not initialized ##########
+            if element_inputs['width'] < 1e-5:
+                continue
+            ###################################################################################################
             axis_id = element_id[:2]
             organ_label = element_id[3]
 
@@ -155,7 +162,7 @@ class Simulation(object):
                         Ag = 0
                     else:
                         Ag = sum([Ag_prim * area_prim for Ag_prim, area_prim in zip(Ag_prim_list, element_inputs['area_prim'])]) / sum(element_inputs['area_prim'])
-
+                
             element_outputs = {'Ag': Ag, 'An': An, 'Rd': Rd,
                                'Tr': Tr, 'Ts': Ts, 'gs': gs,
                                'width': element_inputs['width'], 'height': element_inputs['height']}

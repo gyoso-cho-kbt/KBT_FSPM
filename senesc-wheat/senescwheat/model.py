@@ -77,8 +77,12 @@ class SenescenceModel(object):
             relative_delta_green_area = 0
         # Senescence if (actual proteins/max_proteins) < fraction_N_max
         elif max_proteins == 0 or (proteins / max_proteins) < fraction_N_max:  # fraction_N_max: 0.5 for blade, 0.425 for stem
-            senesced_area = min(prev_green_area, parameters.SENESCENCE_MAX_RATE * delta_t)
-            new_green_area = max(0., prev_green_area - senesced_area)
+            # senesced_area = min(prev_green_area, parameters.SENESCENCE_MAX_RATE * delta_t)
+            # new_green_area = max(0., prev_green_area - senesced_area)
+            ############ zhao: limit to the reduced green area greater than 0 to avoid numeric trouble ###############
+            senesced_area = min(prev_green_area-1.E-6, parameters.SENESCENCE_MAX_RATE * delta_t)
+            new_green_area = max(1.E-6, prev_green_area - senesced_area)
+            ##########################################################################################################
             relative_delta_green_area = senesced_area / prev_green_area
         else:
             new_green_area = prev_green_area

@@ -566,8 +566,7 @@ class Element:
                   (sucrose * 1E-6 * C_MOLAR_MASS) +
                   (starch * 1E-6 * C_MOLAR_MASS) +
                   (fructan * 1E-6 * C_MOLAR_MASS) +
-                  (
-                              amino_acids * 1E-6 * N_MOLAR_MASS) * cnwheat_model.EcophysiologicalConstants.AMINO_ACIDS_MOLAR_MASS_C_RATIO / cnwheat_model.EcophysiologicalConstants.AMINO_ACIDS_MOLAR_MASS_N_RATIO +
+                  (amino_acids * 1E-6 * N_MOLAR_MASS) * cnwheat_model.EcophysiologicalConstants.AMINO_ACIDS_MOLAR_MASS_C_RATIO / cnwheat_model.EcophysiologicalConstants.AMINO_ACIDS_MOLAR_MASS_N_RATIO +
                   (proteins * 1E-6 * N_MOLAR_MASS) * cnwheat_model.EcophysiologicalConstants.AMINO_ACIDS_MOLAR_MASS_C_RATIO / cnwheat_model.EcophysiologicalConstants.AMINO_ACIDS_MOLAR_MASS_N_RATIO +
                   mstruct * cnwheat_model.EcophysiologicalConstants.RATIO_C_mstruct)
 
