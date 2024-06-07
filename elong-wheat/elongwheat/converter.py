@@ -48,7 +48,13 @@ def from_dataframes(hiddenzone_inputs, element_inputs, axis_inputs):
     hiddenzone_inputs_columns = hiddenzone_inputs.columns.difference(HIDDENZONE_TOPOLOGY_COLUMNS)
     emerging_element_inputs_columns = element_inputs.columns.difference(ELEMENT_TOPOLOGY_COLUMNS)
     axis_inputs_columns = axis_inputs.columns.difference(AXIS_TOPOLOGY_COLUMNS)
+    
+    ############## 2024/6/5 zhao: add filter to extract the corresponding items ################
+    emerging_element_inputs_columns = list( set(emerging_element_inputs_columns).intersection( set(simulation.ELEMENT_INPUTS) ) )
+    axis_inputs_columns = list( set(axis_inputs_columns).intersection( set(simulation.AXIS_INPUTS) ) )
+    ##########################################################################################
 
+    
     for axis_inputs_id, axis_inputs_group in axis_inputs.groupby(AXIS_TOPOLOGY_COLUMNS):
         # Axis
         axis_inputs_series = axis_inputs_group.loc[axis_inputs_group.first_valid_index()]

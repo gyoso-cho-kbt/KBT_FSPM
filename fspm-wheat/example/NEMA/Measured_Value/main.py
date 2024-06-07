@@ -149,14 +149,14 @@ np.random.seed(1234)
 HOUR_TO_SECOND_CONVERSION_FACTOR = 3600
 
 INPUTS_DIRPATH = 'inputs'
-GRAPHS_DIRPATH = 'graphs'#'graphs'
+GRAPHS_DIRPATH = 'graphs'
 # GRAPHS_DIRPATH = 'graphs_fructan_0_origin'
 
 # adelwheat inputs at t0
 ADELWHEAT_INPUTS_DIRPATH = os.path.join(INPUTS_DIRPATH, 'adelwheat')  # the directory adelwheat must contain files 'adel0000.pckl' and 'scene0000.bgeom'
 
 # cnwheat inputs at t0
-CNWHEAT_INPUTS_DIRPATH = os.path.join(INPUTS_DIRPATH, 'cnwheat')
+CNWHEAT_INPUTS_DIRPATH = os.path.join(INPUTS_DIRPATH, 'integrated')
 CNWHEAT_PLANTS_INPUTS_FILEPATH = os.path.join(CNWHEAT_INPUTS_DIRPATH, 'plants_inputs.csv')
 CNWHEAT_AXES_INPUTS_FILEPATH = os.path.join(CNWHEAT_INPUTS_DIRPATH, 'axes_inputs.csv')
 CNWHEAT_METAMERS_INPUTS_FILEPATH = os.path.join(CNWHEAT_INPUTS_DIRPATH, 'metamers_inputs.csv')
@@ -166,31 +166,31 @@ CNWHEAT_ELEMENTS_INPUTS_FILEPATH = os.path.join(CNWHEAT_INPUTS_DIRPATH, 'element
 CNWHEAT_SOILS_INPUTS_FILEPATH = os.path.join(CNWHEAT_INPUTS_DIRPATH, 'soils_inputs_calibrated.csv')
 
 # farquharwheat inputs at t0
-FARQUHARWHEAT_INPUTS_DIRPATH = os.path.join(INPUTS_DIRPATH, 'farquharwheat')
+FARQUHARWHEAT_INPUTS_DIRPATH = os.path.join(INPUTS_DIRPATH, 'integrated')
 FARQUHARWHEAT_INPUTS_FILEPATH = os.path.join(FARQUHARWHEAT_INPUTS_DIRPATH, 'inputs.csv')
 FARQUHARWHEAT_AXES_INPUTS_FILEPATH = os.path.join(FARQUHARWHEAT_INPUTS_DIRPATH, 'SAM_inputs.csv')
-METEO_FILEPATH = os.path.join(FARQUHARWHEAT_INPUTS_DIRPATH, 'weather_data_kumada_20240410-0510.csv')
+METEO_FILEPATH = os.path.join(FARQUHARWHEAT_INPUTS_DIRPATH, 'weather_data_kumada-0521.csv')
 # CARIBU_FILEPATH = os.path.join(FARQUHARWHEAT_INPUTS_DIRPATH, 'inputs_eabs.csv')
 # alter the caribu file path for interpolation of the real data. The file must couple with the 'calculate_PARa_by_interploation_df' function
 CARIBU_FILEPATH = os.path.join(FARQUHARWHEAT_INPUTS_DIRPATH, 'inputs_Eabs(origin version).csv')
 
 # elongwheat inputs at t0
-ELONGWHEAT_INPUTS_DIRPATH = os.path.join(INPUTS_DIRPATH, 'elongwheat')
+ELONGWHEAT_INPUTS_DIRPATH = os.path.join(INPUTS_DIRPATH, 'integrated')
 ELONGWHEAT_HZ_INPUTS_FILEPATH = os.path.join(ELONGWHEAT_INPUTS_DIRPATH, 'hiddenzones_inputs.csv')
 ELONGWHEAT_ELEMENTS_INPUTS_FILEPATH = os.path.join(ELONGWHEAT_INPUTS_DIRPATH, 'elements_inputs.csv')
 ELONGWHEAT_AXES_INPUTS_FILEPATH = os.path.join(ELONGWHEAT_INPUTS_DIRPATH, 'SAM_inputs.csv')
 
 # senescwheat inputs at t0
-SENESCWHEAT_INPUTS_DIRPATH = os.path.join(INPUTS_DIRPATH, 'senescwheat')
-SENESCWHEAT_ROOTS_INPUTS_FILEPATH = os.path.join(SENESCWHEAT_INPUTS_DIRPATH, 'roots_inputs.csv')
+SENESCWHEAT_INPUTS_DIRPATH = os.path.join(INPUTS_DIRPATH, 'integrated')
+SENESCWHEAT_ORGANS_INPUTS_FILEPATH = os.path.join(SENESCWHEAT_INPUTS_DIRPATH, 'organs_inputs_calibrated.csv')
 SENESCWHEAT_AXES_INPUTS_FILEPATH = os.path.join(SENESCWHEAT_INPUTS_DIRPATH, 'SAM_inputs.csv')
 SENESCWHEAT_ELEMENTS_INPUTS_FILEPATH = os.path.join(SENESCWHEAT_INPUTS_DIRPATH, 'elements_inputs.csv')
 
 # growthwheat inputs at t0
-GROWTHWHEAT_INPUTS_DIRPATH = os.path.join(INPUTS_DIRPATH, 'growthwheat')
+GROWTHWHEAT_INPUTS_DIRPATH = os.path.join(INPUTS_DIRPATH, 'integrated')
 GROWTHWHEAT_HIDDENZONE_INPUTS_FILEPATH = os.path.join(GROWTHWHEAT_INPUTS_DIRPATH, 'hiddenzones_inputs.csv')
-GROWTHWHEAT_ORGANS_INPUTS_FILEPATH = os.path.join(GROWTHWHEAT_INPUTS_DIRPATH, 'organs_inputs.csv')
-GROWTHWHEAT_ROOTS_INPUTS_FILEPATH = os.path.join(GROWTHWHEAT_INPUTS_DIRPATH, 'roots_inputs.csv')
+GROWTHWHEAT_ELEMENTS_INPUTS_FILEPATH = os.path.join(GROWTHWHEAT_INPUTS_DIRPATH, 'elements_inputs.csv')
+GROWTHWHEAT_ORGANS_INPUTS_FILEPATH = os.path.join(GROWTHWHEAT_INPUTS_DIRPATH, 'organs_inputs_calibrated.csv')
 GROWTHWHEAT_AXES_INPUTS_FILEPATH = os.path.join(GROWTHWHEAT_INPUTS_DIRPATH, 'SAM_inputs.csv')
 
 # the path of the CSV files where to save the states of the modeled system at each step
@@ -260,7 +260,6 @@ def calculate_PARa_by_interploation_df(g, Eabs_df, t, PARi):
     return PARa_element_data_dict
 
 
-
 def calculate_PARa_from_df(g, Eabs_df, PARi, multiple_sources=False, ratio_diffus_PAR=None):
     """
     Compute PARa from an input dataframe having Eabs values.
@@ -305,7 +304,7 @@ def display_seneced_element(g):
     for vid in g.vertices_iter(5):
         node = g.node(vid)
         if node.length and node.length > 0:
-            if node.label.startswith('Leaf') or (node.label.startswith('Stem') and g.node(g.complex(vid)).label.startswith('inter')):
+            if node.label.startswith('Leaf') or (node.label.startswith('Stem') and g.node(g.complex(vid)).label.startswith('ear')):
                 # senesced_length = node.properties().get('senesced_length_element', 0)
                 # green_length = node.length - senesced_length
                 # node.is_green = min(max(1 - float(senesced_length/node.length), 0.0),1.0)
@@ -358,17 +357,18 @@ def main(stop_time, run_simu=True, make_graphs=True):
                                                     adel_wheat)
 
         # senescwheat
-        senescwheat_roots_inputs_t0 = pd.read_csv(SENESCWHEAT_ROOTS_INPUTS_FILEPATH)
+        senescwheat_organs_inputs_t0 = pd.read_csv(SENESCWHEAT_ORGANS_INPUTS_FILEPATH)
         senescwheat_axes_inputs_t0 = pd.read_csv(SENESCWHEAT_AXES_INPUTS_FILEPATH)
         senescwheat_elements_inputs_t0 = pd.read_csv(SENESCWHEAT_ELEMENTS_INPUTS_FILEPATH)
-        update_senescwheat_parameters = None
+        # update_senescwheat_parameters = None
         # update_senescwheat_parameters = {'FRACTION_N_MAX' : {'blade': 0.002, 'stem': 0.00175}} # zhao: lower the senesce threshold to keep the blade alive.
         #################### 2024/05/16 calibrated ###########################
-        update_senescwheat_parameters = {'SENESCENCE_MAX_RATE': 9.5E-10}
-        #####################################################################
+            ########## 2024/05/24 change the SENESCENCE_MAX_RATE to a dictionary to sperate the ear senesce rate settings: 'stem' is for ear ##########
+        update_senescwheat_parameters = {'SENESCENCE_MAX_RATE': {'blade': 8E-10, 'stem': 4E-10 }} # 8E-10
+        ###########################################################################################################################################
         senescwheat_facade_ = senescwheat_facade.SenescWheatFacade(g,
                                                                    senescwheat_ts * hour_to_second_conversion_factor,
-                                                                   senescwheat_roots_inputs_t0,
+                                                                   senescwheat_organs_inputs_t0,
                                                                    senescwheat_axes_inputs_t0,
                                                                    senescwheat_elements_inputs_t0,
                                                                    shared_organs_inputs_outputs_df,
@@ -378,14 +378,14 @@ def main(stop_time, run_simu=True, make_graphs=True):
                                                                    option_static=False)
         # growthwheat
         growthwheat_hiddenzones_inputs_t0 = pd.read_csv(GROWTHWHEAT_HIDDENZONE_INPUTS_FILEPATH)
-        growthwheat_organ_inputs_t0 = pd.read_csv(GROWTHWHEAT_ORGANS_INPUTS_FILEPATH)
-        growthwheat_root_inputs_t0 = pd.read_csv(GROWTHWHEAT_ROOTS_INPUTS_FILEPATH)
+        growthwheat_element_inputs_t0 = pd.read_csv(GROWTHWHEAT_ELEMENTS_INPUTS_FILEPATH)
+        growthwheat_organs_inputs_t0 = pd.read_csv(GROWTHWHEAT_ORGANS_INPUTS_FILEPATH)
         growthwheat_axes_inputs_t0 = pd.read_csv(GROWTHWHEAT_AXES_INPUTS_FILEPATH)
         growthwheat_facade_ = growthwheat_facade.GrowthWheatFacade(g,
                                                                    growthwheat_ts * hour_to_second_conversion_factor,
                                                                    growthwheat_hiddenzones_inputs_t0,
-                                                                   growthwheat_organ_inputs_t0,
-                                                                   growthwheat_root_inputs_t0,
+                                                                   growthwheat_element_inputs_t0,
+                                                                   growthwheat_organs_inputs_t0,
                                                                    growthwheat_axes_inputs_t0,
                                                                    shared_organs_inputs_outputs_df,
                                                                    shared_hiddenzones_inputs_outputs_df,
@@ -402,10 +402,6 @@ def main(stop_time, run_simu=True, make_graphs=True):
         update_parameters_farquharwheat = {
         'SurfacicProteins': False, 'NSC_Retroinhibition': False,
         'DELTA_CONVERGENCE': 0.000001,
-        #################### 2023/10/27 parameter adjustment based on information from kano san ##########################################
-        # 'PARAM_TEMP': {'deltaHa': {'TPU': 47 + 26}, 'deltaHd': {'TPU': 152.3 + 3}, 'Tref': 298.15-5 },
-        # 'Ap_A': 3 * 0.15, 'Vomax_A': 0.5 * 300, 'Aj_A' : 2,
-        
         #################### 2023/11/02 parameter adaption based on kano san information, and use Ac constrain rather than Ap #################
         #################### 2023/12/04 add modification of {'deltaHa':'Jmax'} and {'deltaHd':'Jmax'} to correct the temperature repsonse of Ap #########
         # 'PARAM_TEMP': {'deltaHa': {'Vc_max': 89.7 + 8, 'Jmax': 48.9 + 5}, 'deltaHd':{'Vc_max': 149.3 + 5, 'Jmax': 152.3+1}, 'Tref': 298.15 + 5},
@@ -449,10 +445,10 @@ def main(stop_time, run_simu=True, make_graphs=True):
                                      # }
         update_cnwheat_parameters = {
             # 'PhotosyntheticOrgan': {'VMAX_SFRUCTAN_POT': 0, },
-            # 'grains': {'FILLING_INIT': 240*3600, 'FILLING_END':(240+540)*3600},
+            # 'grains': {'FILLING_INIT': 15*24*3600, 'FILLING_END':900*3600,},
             ########### 2024/06/15 calibrated ######################################
-            'grains': {'FILLING_INIT': 240*3600, 'FILLING_END':(240+540)*3600}, #'VMAX_STARCH':0.25},
-            'roots': {'K_AMINO_ACIDS_EXPORT': 3E-9, 'K_NITRATE_EXPORT': 1E-9, }, #'N_EXUDATION_MAX':1, },
+            'grains': {'FILLING_INIT': 15*24*3600, 'FILLING_END':(15*24+1050)*3600, 'VMAX_STARCH': 10, },
+            'roots': {'K_AMINO_ACIDS_EXPORT': 2.5E-4, 'K_NITRATE_EXPORT': 1E-6, },  # 'K_AMINO_ACIDS_EXPORT': 1.5E-4, 'K_NITRATE_EXPORT': 1E-6, 
             # 'PhotosyntheticOrgan': {'VMAX_SFRUCTAN_POT': 0, 'SIGMA_SUCROSE': 1e-01}#, 'SIGMA_AMINO_ACIDS': 1e-2},
             #######################################################################
             }
@@ -475,9 +471,10 @@ def main(stop_time, run_simu=True, make_graphs=True):
         # zhao: elements in the 'forced_max_protein_elements' is allowed to senesce.
         # forced_max_protein_elements = {(1, 'MS', 9, 'blade', 'LeafElement1'), (1, 'MS', 10, 'blade', 'LeafElement1'), (1, 'MS', 11, 'blade', 'LeafElement1'), (2, 'MS', 9, 'blade', 'LeafElement1'),
                                        # (2, 'MS', 10, 'blade', 'LeafElement1'), (2, 'MS', 11, 'blade', 'LeafElement1')}
-        # zhao: also add internode to senesce                               
-        forced_max_protein_elements = {(1, 'MS', 9, 'blade', 'LeafElement1'), (1, 'MS', 10, 'blade', 'LeafElement1'), (1, 'MS', 11, 'blade', 'LeafElement1')}
-
+        # zhao: also add internode to senesce. The default behavior is to update the max_proteins according to the proteins in the first run of program, but the listed element here will use the input value as it is.                      
+        forced_max_protein_elements = {(1, 'MS', 9, 'blade', 'LeafElement1'), (1, 'MS', 10, 'blade', 'LeafElement1'), (1, 'MS', 11, 'blade', 'LeafElement1')}#, (1, 'MS', 14, 'ear', 'StemElement')}
+        # g.property('max_proteins')[209] = 10 # force set the ear stemElement, and lower it to keep it alive.
+        
         # zhao: add internode length manully, and reset the length for the peduncle and ear, for these are wiredly updated.
         g.property('length')[184] = .11
         g.property('length')[168] = .12
@@ -518,14 +515,15 @@ def main(stop_time, run_simu=True, make_graphs=True):
         
         # zhao: set the max protein leaf as 0, because its 'update_max_protein' is also True, senesce (should) not happen to it
         ############ 2024/5/16 calibrated ######################################
-        g.property('max_proteins')[167+14] = 0 # the second leaf
+        # g.property('max_proteins')[167+14] = 0 # the second leaf
         ########################################################################
-        # g.property('max_proteins')[197] = 0 # the flag leaf
+        g.property('max_proteins')[197] = 0 # the flag leaf
         
         # define the start and the end of the whole simulation (in hours)
         # start_time = 252   # (h)
         # stop_time = start_time + 35*24  # stop_time=252+35*24=1092 the span for actual measurement is 35 days
         start_time = 0
+        stop_time = 1967-960
         
        
         # # manually set the interpolation time interval
@@ -567,23 +565,20 @@ def main(stop_time, run_simu=True, make_graphs=True):
                 for t_senescwheat in range(t_elongwheat, t_elongwheat + elongwheat_ts, senescwheat_ts):
                     # run SenescWheat
                     print('t senescwheat is {}'.format(t_senescwheat))
-                    # zhao: forcelly set the max_protein of blade in phytomer 10 as 0 to activate senesce
-                    if t_senescwheat > 288:
-                        # g.node(151+14).max_proteins = 0
+                    if t_senescwheat > start_time+288:
+                        # g.node(151+14).max_proteins = 0  # zhao: forcelly set the max_protein of blade in phytomer 10 as 0 to activate senesce
                         ########################### 2024/5/16 calibrated ############################
                         g.node(197).max_proteins = 0 # flag leaf, set on the senescence
-                        forced_max_protein_elements = {(1, 'MS', 9, 'blade', 'LeafElement1'), (1, 'MS', 10, 'blade', 'LeafElement1'), (1, 'MS', 11, 'blade', 'LeafElement1'), (1, 'MS', 12, 'blade', 'LeafElement1')}
+                        forced_max_protein_elements = forced_max_protein_elements.union( {(1, 'MS', 12, 'blade', 'LeafElement1')} )
                         #############################################################################
-                        
                     senescwheat_facade_.run(forced_max_protein_elements, postflowering_stages=True, option_static=False)
-                    
                     ############# zhao: save the snapshot for animation ######################
-                    if t_senescwheat % 24 == 0:
-                        logger.info('t:{}'.format(t_senescwheat))
-                        g = display_seneced_element(g)
+                    # if t_senescwheat % 24 == 0:
+                        # logger.info('t:{}'.format(t_senescwheat))
+                        # g = display_seneced_element(g)
                         # canopy_g = propogate_plant_properties(g, canopy_g, 'is_green')
                         # adel_wheat.plot(canopy_g)
-                        # Viewer.saveSnapshot('./animation/{:d}.png'.format(t_senescwheat//24))
+                        # Viewer.saveSnapshot('./animation/{:d}.png'.format(t_senescwheat//24-start_time//24))
                         # Viewer.stop()
                     ######################################################
                     # Test for fully senesced shoot tissues  #TODO: Make the model to work even if the whole shoot is dead but the roots are alived
@@ -602,7 +597,6 @@ def main(stop_time, run_simu=True, make_graphs=True):
                             ## zhao: try interpolation between real values, the function must couple with the inputs_Eabs_interpolation.csv file.
                             aggregated_PARa = calculate_PARa_from_df(g, Eabs_df, PARi, multiple_sources=False)
                             # aggregated_PARa = calculate_PARa_by_interploation_df(g, Eabs_df, t_farquharwheat, PARi)
-                            
                             print('t caribu is {}'.format(t_farquharwheat))
                             # caribu_facade_.run(energy=PARi,sun_sky_option='sky')
                             caribu_facade_.update_shared_MTG({'PARa': aggregated_PARa})

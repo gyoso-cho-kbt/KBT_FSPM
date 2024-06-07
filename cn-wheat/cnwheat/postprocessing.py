@@ -880,6 +880,12 @@ def postprocessing(plants_df=None, axes_df=None, metamers_df=None, hiddenzones_d
         pp_organs_df.loc[pp_organs_df.organ == 'grains', 'Proteins_N_Mass'] = Grains.calculate_protein_N_mass(grains_df['proteins'])
         pp_organs_df = pp_organs_df.reindex(columns=ORGANS_RUN_POSTPROCESSING_VARIABLES, copy=False)
         pp_organs_df['plant'] = pp_organs_df['plant'].astype(int)
+        ########## zhao: adding sorting process for readability ###################
+        pp_organs_df = pp_organs_df.reindex(sorted(pp_organs_df.columns), axis=1)
+        watching_column_names = ['t', 'organ', 'Dry_Mass', 'proteins', 'amino_acids', 'mstruct', 'structure', 'starch']
+        other_columns = list(set(pp_organs_df.columns)-set(watching_column_names))
+        pp_organs_df = pp_organs_df[watching_column_names+other_columns]
+        ###########################################################################
         returned_dataframes.append(pp_organs_df)
     else:
         returned_dataframes.append(pd.DataFrame({'A': []}))

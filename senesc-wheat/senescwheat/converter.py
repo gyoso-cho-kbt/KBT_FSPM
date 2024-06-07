@@ -3,6 +3,8 @@
 from __future__ import division  # use "//" to do integer division
 import pandas as pd
 
+import os, sys
+
 """
     senescwheat.converter
     ~~~~~~~~~~~~~~~~~~~~~
@@ -45,8 +47,10 @@ SENESCWHEAT_AXES_INPUTS_OUTPUTS = sorted(list(set(SENESCWHEAT_AXES_INPUTS + SENE
 SENESCWHEAT_ELEMENTS_INPUTS_OUTPUTS = sorted(list(set(SENESCWHEAT_ELEMENTS_INPUTS + SENESCWHEAT_ELEMENTS_OUTPUTS)))
 
 #: the columns which define the topology of a roots in the input/output dataframe
-ROOTS_TOPOLOGY_COLUMNS = ['plant', 'axis']
-
+################ 2024/6/5 zhao: modify for integration the input file ######################
+# ROOTS_TOPOLOGY_COLUMNS = ['plant', 'axis']
+ROOTS_TOPOLOGY_COLUMNS = ['plant', 'axis', 'organ']
+############################################################################################
 #: the columns which define the topology of a roots in the input/output dataframe
 AXES_TOPOLOGY_COLUMNS = ['plant', 'axis']
 
@@ -54,7 +58,7 @@ AXES_TOPOLOGY_COLUMNS = ['plant', 'axis']
 ELEMENTS_TOPOLOGY_COLUMNS = ['plant', 'axis', 'metamer', 'organ', 'element']
 
 
-def from_dataframes(roots_inputs, axes_inputs, elements_inputs):
+def from_dataframes(organs_inputs, axes_inputs, elements_inputs):
     """
     Convert inputs/outputs from Pandas dataframes to Senesc-Wheat format.
 
@@ -72,14 +76,35 @@ def from_dataframes(roots_inputs, axes_inputs, elements_inputs):
     all_roots_dict = {}
     all_axes_dict = {}
     all_elements_dict = {}
-    for (all_current_dict, current_dataframe, current_topology_columns) in ((all_roots_dict, roots_inputs, ROOTS_TOPOLOGY_COLUMNS),
-                                                                            (all_axes_dict, axes_inputs, AXES_TOPOLOGY_COLUMNS),
-                                                                            (all_elements_dict, elements_inputs, ELEMENTS_TOPOLOGY_COLUMNS)):
+    
+    # for (all_current_dict, current_dataframe, current_topology_columns, ) in ((all_roots_dict, organs_inputs, ROOTS_TOPOLOGY_COLUMNS, ),
+                                                                        # (all_axes_dict, axes_inputs, AXES_TOPOLOGY_COLUMNS, ),
+                                                                        # (all_elements_dict, elements_inputs, ELEMENTS_TOPOLOGY_COLUMNS, )):
+        # current_columns = current_dataframe.columns.difference(current_topology_columns)
+        # for current_id, current_group in current_dataframe.groupby(current_topology_columns):
+            # current_series = current_group.loc[current_group.first_valid_index()]
+            # current_dict = current_series[current_columns].to_dict()
+            # all_current_dict[current_id] = current_dict
+                
+    ############## 2024/6/5 zhao: modification for integrate the input ############################################################################################
+    for (all_current_dict, current_dataframe, current_topology_columns, required_input) in ((all_roots_dict, organs_inputs, ROOTS_TOPOLOGY_COLUMNS, SENESCWHEAT_ROOTS_INPUTS),
+                                                                            (all_axes_dict, axes_inputs, AXES_TOPOLOGY_COLUMNS, SENESCWHEAT_AXES_INPUTS),
+                                                                            (all_elements_dict, elements_inputs, ELEMENTS_TOPOLOGY_COLUMNS, SENESCWHEAT_ELEMENTS_INPUTS)):
         current_columns = current_dataframe.columns.difference(current_topology_columns)
-        for current_id, current_group in current_dataframe.groupby(current_topology_columns):
-            current_series = current_group.loc[current_group.first_valid_index()]
-            current_dict = current_series[current_columns].to_dict()
-            all_current_dict[current_id] = current_dict
+        current_columns = list( set(current_columns).intersection( set(required_input) ) )
+        if current_dataframe is organs_inputs: # zhao: process root data seperately for the current version is using the organ file.
+            for current_id, current_group in current_dataframe.groupby(current_topology_columns):
+                if current_id[-1] == 'roots': # zhao: only process the roots group, whose organ entry is 'roots'
+                    current_series = current_group.loc[current_group.first_valid_index()]
+                    current_dict = current_series[current_columns].to_dict()
+                    all_current_dict[current_id] = current_dict
+            
+        else:
+            for current_id, current_group in current_dataframe.groupby(current_topology_columns):
+                current_series = current_group.loc[current_group.first_valid_index()]
+                current_dict = current_series[current_columns].to_dict()
+                all_current_dict[current_id] = current_dict
+    ##############################################################################################################################################################
 
     return {'roots': all_roots_dict, 'axes': all_axes_dict, 'elements': all_elements_dict}
 
@@ -110,5 +135,4 @@ def to_dataframes(data_dict):
         current_df = current_df.reindex(current_columns_sorted, axis=1, copy=False)
         current_df.reset_index(drop=True, inplace=True)
         dataframes_dict[current_key] = current_df
-
     return dataframes_dict['roots'], dataframes_dict['axes'], dataframes_dict['elements']

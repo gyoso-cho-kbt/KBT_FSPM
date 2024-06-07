@@ -87,7 +87,10 @@ class Simulation(object):
         all_roots_outputs = self.outputs['roots']
         for roots_inputs_id, roots_inputs_dict in all_roots_inputs.items():
             # Temperature-compensated time (delta_teq)
-            delta_teq = all_axes_inputs[roots_inputs_id]['delta_teq_roots']
+            ############# 2024/6/5 zhao: modify the id for input integration ###########################
+            # delta_teq = all_axes_inputs[roots_inputs_id]['delta_teq_roots']
+            delta_teq = all_axes_inputs[roots_inputs_id[:2]]['delta_teq_roots'] # zhao: conver roots_id to axis_id
+            ############################################################################################
 
             # loss of mstruct and Nstruct
             rate_mstruct_death, rate_Nstruct_death = model.SenescenceModel.calculate_roots_senescence(roots_inputs_dict['mstruct'], roots_inputs_dict['Nstruct'], postflowering_stages)

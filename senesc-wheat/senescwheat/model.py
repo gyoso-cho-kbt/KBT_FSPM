@@ -64,11 +64,22 @@ class SenescenceModel(object):
 
         .. todo:: remove update_max_protein
         """
-
         if organ_name == 'blade':
             fraction_N_max = parameters.FRACTION_N_MAX['blade']
+            ############# zhao: seperate the senesce rate for ear ##############
+            senescence_max_rate =  parameters.SENESCENCE_MAX_RATE['blade']
+            ##################################################################
+        elif organ_name == 'ear':
+            ############# zhao: seperate the senesce rate for ear ##############
+            senescence_max_rate = parameters.SENESCENCE_MAX_RATE['stem']
+            fraction_N_max = parameters.FRACTION_N_MAX['blade']
+            ###################################################################
         else:
             fraction_N_max = parameters.FRACTION_N_MAX['stem']
+            ############# zhao: seperate the senesce rate for ear ##############
+            senescence_max_rate =  parameters.SENESCENCE_MAX_RATE['stem']
+            ##################################################################
+
 
         # Overwrite max proteins
         if max_proteins < proteins and update_max_protein:  # zhao: if 'update_max_protein' is true, the leaf will not senesced
@@ -80,7 +91,9 @@ class SenescenceModel(object):
             # senesced_area = min(prev_green_area, parameters.SENESCENCE_MAX_RATE * delta_t)
             # new_green_area = max(0., prev_green_area - senesced_area)
             ############ zhao: limit to the reduced green area greater than 0 to avoid numeric trouble ###############
-            senesced_area = min(prev_green_area-1.E-6, parameters.SENESCENCE_MAX_RATE * delta_t)
+            # senesced_area = min(prev_green_area-1.E-6, parameters.SENESCENCE_MAX_RATE * delta_t)
+            ############ zhao: sperate the ear rate #######################################################
+            senesced_area = min(prev_green_area-1.E-6, senescence_max_rate * delta_t)
             new_green_area = max(1.E-6, prev_green_area - senesced_area)
             ##########################################################################################################
             relative_delta_green_area = senesced_area / prev_green_area

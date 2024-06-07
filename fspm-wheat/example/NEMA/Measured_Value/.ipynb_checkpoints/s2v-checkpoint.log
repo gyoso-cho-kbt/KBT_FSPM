@@ -1,0 +1,5 @@
+s2v -h 
+<!> Syntax error: s2v [shm_id  nz  Dz  file.8  file_1.opt ... file_n.opt]
+	 MC2005
+ferrlog stream close by ~ferrlog()
+	(may be abnormal)

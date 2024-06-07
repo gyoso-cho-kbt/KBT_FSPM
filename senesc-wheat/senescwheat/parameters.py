@@ -20,8 +20,11 @@ SENESCENCE_ROOTS_PREFLOWERING = 0  # TODO: should be ontogenic for vegetative st
 
 FRACTION_N_MAX = {'blade': 0.5, 'stem': 0.425}  # Threshold of ([proteins]/[proteins]max) below which tissue death is triggered
 
-SENESCENCE_MAX_RATE = 0.2E-8 * CONVERSION_FACTOR_20_TO_12  # maximal senescence m² s-1 at 12°C (Tref)
-SENESCENCE_LENGTH_MAX_RATE = SENESCENCE_MAX_RATE / 3.5e-3  # maximal senescence m s-1 at 12°C (Tref)
+######### zhao: seperate the ear settings from the blade ##################
+SENESCENCE_MAX_RATE = {'blade': 0.2E-8*CONVERSION_FACTOR_20_TO_12, 'stem': 0.1E-8*CONVERSION_FACTOR_20_TO_12 }
+######################################################
+# SENESCENCE_MAX_RATE = 0.2E-8 * CONVERSION_FACTOR_20_TO_12  # maximal senescence m² s-1 at 12°C (Tref)
+# SENESCENCE_LENGTH_MAX_RATE = SENESCENCE_MAX_RATE / 3.5e-3  # maximal senescence m s-1 at 12°C (Tref)
 
 RATIO_N_MSTRUCT = {1: 0.02, 2: 0.02, 3: 0.02, 4: 0.02, 5: 0.0175, 6: 0.015, 7: 0.01, 8: 0.005, 9: 0.005, 10: 0.005, 11: 0.005}  # Residual Mass of N in 1 g of mstruct at full senescence of the blade (from experiment NEMA)
 DEFAULT_RATIO_N_MSTRUCT = 0.005  #: default N content in total organ mass (senesced + green) if phytomer rank not found above

@@ -48,7 +48,7 @@ class GrowthWheatFacade(object):
     def __init__(self, shared_mtg, delta_t,
                  model_hiddenzones_inputs_df,
                  model_elements_inputs_df,
-                 model_roots_inputs_df,
+                 model_organs_inputs_df,
                  model_axes_inputs_df,
                  shared_organs_inputs_outputs_df,
                  shared_hiddenzones_inputs_outputs_df,
@@ -78,7 +78,7 @@ class GrowthWheatFacade(object):
 
         self._simulation = simulation.Simulation(delta_t=delta_t, update_parameters=update_parameters)  #: the simulator to use to run the model
 
-        all_growthwheat_inputs_dict = converter.from_dataframes(model_hiddenzones_inputs_df, model_elements_inputs_df, model_roots_inputs_df, model_axes_inputs_df)
+        all_growthwheat_inputs_dict = converter.from_dataframes(model_hiddenzones_inputs_df, model_elements_inputs_df, model_organs_inputs_df, model_axes_inputs_df)
 
         self._update_shared_MTG(all_growthwheat_inputs_dict['hiddenzone'], all_growthwheat_inputs_dict['elements'], all_growthwheat_inputs_dict['roots'], all_growthwheat_inputs_dict['axes'])
 
@@ -88,7 +88,7 @@ class GrowthWheatFacade(object):
         self._shared_axes_inputs_outputs_df = shared_axes_inputs_outputs_df  #: the dataframe at axis scale shared between all models
         self._update_shared_df = update_shared_df
         if self._update_shared_df:
-            self._update_shared_dataframes(model_hiddenzones_inputs_df, model_elements_inputs_df, model_roots_inputs_df, model_axes_inputs_df)
+            self._update_shared_dataframes(model_hiddenzones_inputs_df, model_elements_inputs_df, model_organs_inputs_df, model_axes_inputs_df)
 
     def run(self, postflowering_stages=False, update_shared_df=None):
         """
@@ -133,7 +133,6 @@ class GrowthWheatFacade(object):
                 if 'roots' in mtg_axis_properties:
                     roots_id = (mtg_plant_index, mtg_axis_label, 'roots')
                     mtg_roots_properties = mtg_axis_properties['roots']
-
                     if set(mtg_roots_properties).issuperset(simulation.ROOT_INPUTS):
                         growthwheat_roots_inputs_dict = {}
                         for growthwheat_roots_input_name in simulation.ROOT_INPUTS:
@@ -260,7 +259,7 @@ class GrowthWheatFacade(object):
                                 for element_data_name, element_data_value in growthwheat_element_data_dict.items():
                                     self._shared_mtg.property(element_data_name)[mtg_element_vid] = element_data_value
 
-    def _update_shared_dataframes(self, growthwheat_hiddenzones_data_df, growthwheat_elements_data_df, growthwheat_roots_data_df, growthwheat_axes_data_df):
+    def _update_shared_dataframes(self, growthwheat_hiddenzones_data_df, growthwheat_elements_data_df, growthwheat_organs_data_df, growthwheat_axes_data_df):
         """
         Update the dataframes shared between all models from the inputs dataframes or the outputs dataframes of the model.
 
@@ -274,11 +273,17 @@ class GrowthWheatFacade(object):
             shared_inputs_outputs_indexes, \
             shared_inputs_outputs_df in ((growthwheat_hiddenzones_data_df, SHARED_HIDDENZONES_INPUTS_OUTPUTS_INDEXES, self._shared_hiddenzones_inputs_outputs_df),
                                          (growthwheat_elements_data_df, SHARED_ELEMENTS_INPUTS_OUTPUTS_INDEXES, self._shared_elements_inputs_outputs_df),
-                                         (growthwheat_roots_data_df, SHARED_ORGANS_INPUTS_OUTPUTS_INDEXES, self._shared_organs_inputs_outputs_df),
+                                         (growthwheat_organs_data_df, SHARED_ORGANS_INPUTS_OUTPUTS_INDEXES, self._shared_organs_inputs_outputs_df),
                                          (growthwheat_axes_data_df, SHARED_AXES_INPUTS_OUTPUTS_INDEXES, self._shared_axes_inputs_outputs_df)):
 
-            if growthwheat_data_df is growthwheat_roots_data_df:
-                growthwheat_data_df = growthwheat_data_df.copy()
-                growthwheat_data_df.loc[:, 'organ'] = 'roots'
+            if growthwheat_data_df is growthwheat_organs_data_df:
+            ############### 2024/6/5 zhao: modification for integrate the input file ################################################
+                for current_id, current_group in growthwheat_data_df.groupby(SHARED_ORGANS_INPUTS_OUTPUTS_INDEXES):
+                    if current_id[-1] == 'roots': # zhao: only extract the roots group.
+                        temp_group = current_group.loc[[current_group.first_valid_index()]].copy()
+                growthwheat_data_df = temp_group
+                # growthwheat_data_df = growthwheat_data_df.copy()
+                # growthwheat_data_df.loc[:, 'organ'] = 'roots'
+            #########################################################################################################################
 
             tools.combine_dataframes_inplace(growthwheat_data_df, shared_inputs_outputs_indexes, shared_inputs_outputs_df)

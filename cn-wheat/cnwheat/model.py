@@ -721,6 +721,7 @@ class Grains(Organ):
         :return: Rate of Synthesis of grain starch (µmol` C g-1 mstruct h-1)
         :rtype: float
         """
+        
         if self.age_from_flowering <= Grains.PARAMETERS.FILLING_INIT:  #: Grain enlargment
             S_grain_starch = 0
         elif self.age_from_flowering > Grains.PARAMETERS.FILLING_END:  #: Grain maturity

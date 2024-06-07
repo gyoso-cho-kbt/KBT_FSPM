@@ -6,6 +6,8 @@ from senescwheat import converter, simulation
 
 from fspmwheat import tools
 
+import sys, os
+
 """
     fspmwheat.senescwheat_facade
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -39,7 +41,7 @@ class SenescWheatFacade(object):
     """
 
     def __init__(self, shared_mtg, delta_t,
-                 model_roots_inputs_df,
+                 model_organs_inputs_df,
                  model_axes_inputs_df,
                  model_elements_inputs_df,
                  shared_organs_inputs_outputs_df,
@@ -65,7 +67,7 @@ class SenescWheatFacade(object):
 
         self._simulation = simulation.Simulation(delta_t=delta_t, update_parameters=update_parameters)  #: the simulator to use to run the model
 
-        all_senescwheat_inputs_dict = converter.from_dataframes(model_roots_inputs_df, model_axes_inputs_df, model_elements_inputs_df)
+        all_senescwheat_inputs_dict = converter.from_dataframes(model_organs_inputs_df, model_axes_inputs_df, model_elements_inputs_df)
         self._update_shared_MTG(all_senescwheat_inputs_dict['roots'], all_senescwheat_inputs_dict['axes'], all_senescwheat_inputs_dict['elements'], option_static=option_static)
 
         self._shared_organs_inputs_outputs_df = shared_organs_inputs_outputs_df  #: the dataframe at organs scale shared between all models
@@ -73,7 +75,7 @@ class SenescWheatFacade(object):
         self._shared_elements_inputs_outputs_df = shared_elements_inputs_outputs_df  #: the dataframe at elements scale shared between all models
         self._update_shared_df = update_shared_df
         if self._update_shared_df:
-            self._update_shared_dataframes(model_roots_inputs_df, model_axes_inputs_df, model_elements_inputs_df)
+            self._update_shared_dataframes(model_organs_inputs_df, model_axes_inputs_df, model_elements_inputs_df)
 
     def run(self, forced_max_protein_elements=None, postflowering_stages=False, update_shared_df=None, option_static=False):
         """
@@ -83,7 +85,6 @@ class SenescWheatFacade(object):
         :param bool postflowering_stages: True to run a simulation with postflo parameter
         :param bool update_shared_df: if 'True', update the shared dataframes at this time step.
         """
-
         self._initialize_model()
         self._simulation.run(forced_max_protein_elements=forced_max_protein_elements, postflowering_stages=postflowering_stages)
         self._update_shared_MTG(self._simulation.outputs['roots'], self._simulation.outputs['axes'], self._simulation.outputs['elements'], option_static = option_static)
@@ -91,7 +92,7 @@ class SenescWheatFacade(object):
         if update_shared_df or (update_shared_df is None and self._update_shared_df):
             senescwheat_roots_outputs_df, senescwheat_axes_outputs_df, senescwheat_elements_outputs_df = converter.to_dataframes(self._simulation.outputs)
             self._update_shared_dataframes(senescwheat_roots_outputs_df, senescwheat_axes_outputs_df, senescwheat_elements_outputs_df)
-
+                
     def _initialize_model(self):
         """
         Initialize the inputs of the model from the MTG shared between all models.
@@ -108,6 +109,9 @@ class SenescWheatFacade(object):
                 if mtg_axis_label != 'MS':
                     continue
                 axis_id = (mtg_plant_index, mtg_axis_label)
+                ##### 2024/6/5 zhao: modify to integrate the input file #############
+                roots_id = (mtg_plant_index, mtg_axis_label, 'roots')
+                #####################################################################
                 mtg_axis_properties = self._shared_mtg.get_vertex_property(mtg_axis_vid)
                 if set(mtg_axis_properties).issuperset(converter.SENESCWHEAT_AXES_INPUTS):
                     senescwheat_axis_inputs_dict = {}
@@ -120,7 +124,10 @@ class SenescWheatFacade(object):
                         senescwheat_roots_inputs_dict = {}
                         for senescwheat_roots_input_name in converter.SENESCWHEAT_ROOTS_INPUTS:
                             senescwheat_roots_inputs_dict[senescwheat_roots_input_name] = mtg_roots_properties[senescwheat_roots_input_name]
-                        all_senescwheat_roots_inputs_dict[axis_id] = senescwheat_roots_inputs_dict
+                        ##### 2024/6/5 zhao: modify to integrate the input file ###################   
+                        # all_senescwheat_roots_inputs_dict[axis_id] = senescwheat_roots_inputs_dict
+                        all_senescwheat_roots_inputs_dict[roots_id] = senescwheat_roots_inputs_dict
+                        ###########################################################################
                 for mtg_metamer_vid in self._shared_mtg.components_iter(mtg_axis_vid):
                     mtg_metamer_index = int(self._shared_mtg.index(mtg_metamer_vid))
                     for mtg_organ_vid in self._shared_mtg.components_iter(mtg_metamer_vid):
@@ -160,7 +167,6 @@ class SenescWheatFacade(object):
         :param dict senescwheat_axes_data_dict: Senesc-Wheat outputs at axis scale
         :param dict senescwheat_elements_data_dict: Senesc-Wheat outputs at element scale
         """
-
         # add the properties if needed
         mtg_property_names = self._shared_mtg.property_names()
         if 'roots' not in mtg_property_names:
@@ -181,15 +187,24 @@ class SenescWheatFacade(object):
 
                 # update the axis property in the MTG
                 axis_id = (mtg_plant_index, mtg_axis_label)
+                ##### 2024/6/5 zhao: modify to integrate the input file #############
+                roots_id = (mtg_plant_index, mtg_axis_label, 'roots')
+                #####################################################################
                 mtg_axis_properties = self._shared_mtg.get_vertex_property(mtg_axis_vid)
                 mtg_axis_properties.update(senescwheat_axes_data_dict.get(axis_id, []))
                 # update the roots in the MTG
-                if axis_id not in senescwheat_roots_data_dict:
+                ##### 2024/6/5 zhao: modify to integrate the input file #############
+                # if axis_id not in senescwheat_roots_data_dict:
+                if roots_id not in senescwheat_roots_data_dict:
+                #####################################################################
                     continue
                 if 'roots' not in self._shared_mtg.get_vertex_property(mtg_axis_vid):
                     self._shared_mtg.property('roots')[mtg_axis_vid] = {}
                 mtg_roots_properties = self._shared_mtg.get_vertex_property(mtg_axis_vid)['roots']
-                mtg_roots_properties.update(senescwheat_roots_data_dict[axis_id])
+                ##### 2024/6/5 zhao: modify to integrate the input file ##############
+                # mtg_roots_properties.update(senescwheat_roots_data_dict[axis_id])
+                mtg_roots_properties.update(senescwheat_roots_data_dict[roots_id])
+                #######################################################################
                 # update the element in the MTG
                 for mtg_metamer_vid in self._shared_mtg.components_iter(mtg_axis_vid):
                     mtg_metamer_index = int(self._shared_mtg.index(mtg_metamer_vid))
@@ -213,7 +228,7 @@ class SenescWheatFacade(object):
                                 if senescwheat_element_data_name == 'senesced_length_element' and mtg_element_label in ['LeafElement1', 'StemElement']:
                                     self._shared_mtg.property('senesced_length')[mtg_organ_vid] = np.nan_to_num(self._shared_mtg.property(senescwheat_element_data_name).get(mtg_element_vid, 0.))
 
-    def _update_shared_dataframes(self, senescwheat_roots_data_df, senescwheat_axes_data_df, senescwheat_elements_data_df):
+    def _update_shared_dataframes(self, senescwheat_organs_data_df, senescwheat_axes_data_df, senescwheat_elements_data_df):
         """
         Update the dataframes shared between all models from the inputs dataframes or the outputs dataframes of the model.
         :param pandas.DataFrame senescwheat_roots_data_df: Elong-Wheat shared dataframe at root scale
@@ -223,12 +238,17 @@ class SenescWheatFacade(object):
 
         for senescwheat_data_df, \
             shared_inputs_outputs_indexes, \
-            shared_inputs_outputs_df in ((senescwheat_roots_data_df, SHARED_ORGANS_INPUTS_OUTPUTS_INDEXES, self._shared_organs_inputs_outputs_df),
+            shared_inputs_outputs_df in ((senescwheat_organs_data_df, SHARED_ORGANS_INPUTS_OUTPUTS_INDEXES, self._shared_organs_inputs_outputs_df),
                                          (senescwheat_axes_data_df, SHARED_AXES_INPUTS_OUTPUTS_INDEXES, self._shared_axes_inputs_outputs_df),
                                          (senescwheat_elements_data_df, SHARED_ELEMENTS_INPUTS_OUTPUTS_INDEXES, self._shared_elements_inputs_outputs_df)):
 
-            if senescwheat_data_df is senescwheat_roots_data_df:
-                senescwheat_data_df = senescwheat_data_df.copy()
-                senescwheat_data_df.loc[:, 'organ'] = 'roots'
+            if senescwheat_data_df is senescwheat_organs_data_df:
+            ############### 2024/6/5 zhao: add filter to extract the corresponding items ############################################
+                for current_id, current_group in senescwheat_data_df.groupby(SHARED_ORGANS_INPUTS_OUTPUTS_INDEXES):
+                    if current_id[-1] == 'roots': # zhao: only extract the roots group.
+                        senescwheat_data_df = current_group.loc[[current_group.first_valid_index()]].copy()
+                # senescwheat_data_df = senescwheat_data_df.copy()
+                # senescwheat_data_df.loc[:, 'organ'] = 'roots' 
+            #########################################################################################################################
 
             tools.combine_dataframes_inplace(senescwheat_data_df, shared_inputs_outputs_indexes, shared_inputs_outputs_df)

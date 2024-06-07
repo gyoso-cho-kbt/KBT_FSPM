@@ -5,6 +5,8 @@ import pandas as pd
 
 from growthwheat import simulation
 
+import os,sys
+
 """
     growthwheat.converter
     ~~~~~~~~~~~~~~~~~~~~~
@@ -24,7 +26,7 @@ ROOT_TOPOLOGY_COLUMNS = ['plant', 'axis', 'organ']
 AXIS_TOPOLOGY_COLUMNS = ['plant', 'axis']
 
 
-def from_dataframes(hiddenzone_inputs, element_inputs, root_inputs, axis_inputs):
+def from_dataframes(hiddenzone_inputs, element_inputs, organ_inputs, axis_inputs):
     """
     Convert inputs/outputs from Pandas dataframe to Growth-Wheat format.
 
@@ -42,10 +44,16 @@ def from_dataframes(hiddenzone_inputs, element_inputs, root_inputs, axis_inputs)
     all_element_dict = {}
     all_root_dict = {}
     all_axes_dict = {}
+    
     hiddenzone_inputs_columns = hiddenzone_inputs.columns.difference(HIDDENZONE_TOPOLOGY_COLUMNS)
     element_inputs_columns = element_inputs.columns.difference(ELEMENT_TOPOLOGY_COLUMNS)
-    root_inputs_columns = root_inputs.columns.difference(ROOT_TOPOLOGY_COLUMNS)
+    root_inputs_columns = organ_inputs.columns.difference(ROOT_TOPOLOGY_COLUMNS)
     axis_inputs_columns = axis_inputs.columns.difference(AXIS_TOPOLOGY_COLUMNS)
+    
+    ############## 2024/6/5 zhao: modify for integration the input file ##############################
+    root_inputs_columns = list( set(root_inputs_columns).intersection( set(simulation.ROOT_INPUTS) ) )
+    ##################################################################################################
+
 
     for element_inputs_id, element_inputs_group in element_inputs.groupby(ELEMENT_TOPOLOGY_COLUMNS):
         # element
@@ -60,11 +68,17 @@ def from_dataframes(hiddenzone_inputs, element_inputs, root_inputs, axis_inputs)
         hiddenzone_inputs_dict = hiddenzone_inputs_series[hiddenzone_inputs_columns].to_dict()
         all_hiddenzone_dict[hiddenzone_inputs_id] = hiddenzone_inputs_dict
 
-    for root_inputs_id, root_inputs_group in root_inputs.groupby(ROOT_TOPOLOGY_COLUMNS):
+    for root_inputs_id, root_inputs_group in organ_inputs.groupby(ROOT_TOPOLOGY_COLUMNS):
         # root
-        root_inputs_series = root_inputs_group.loc[root_inputs_group.first_valid_index()]
-        root_inputs_dict = root_inputs_series[root_inputs_columns].to_dict()
-        all_root_dict[root_inputs_id] = root_inputs_dict
+        ############ 2024/6/5 zhao: only extract the 'root' data from organ input ###################
+        # root_inputs_series = root_inputs_group.loc[root_inputs_group.first_valid_index()]
+        # root_inputs_dict = root_inputs_series[root_inputs_columns].to_dict()
+        # all_root_dict[root_inputs_id] = root_inputs_dict
+        if root_inputs_id[-1] == 'roots':
+            root_inputs_series = root_inputs_group.loc[root_inputs_group.first_valid_index()]
+            root_inputs_dict = root_inputs_series[root_inputs_columns].to_dict()
+            all_root_dict[root_inputs_id] = root_inputs_dict
+        ############################################################################################
 
     for axis_inputs_id, axis_inputs_group in axis_inputs.groupby(AXIS_TOPOLOGY_COLUMNS):
         # axis

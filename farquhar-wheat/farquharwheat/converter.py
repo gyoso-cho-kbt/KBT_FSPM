@@ -48,6 +48,10 @@ def from_dataframe(element_inputs, axes_inputs):
     """
     all_elements_dict = {}
     data_columns = element_inputs.columns.difference(ELEMENT_TOPOLOGY_COLUMNS)
+    ############## 2024/6/5 zhao: add filter to extract the corresponding items ################
+    data_columns = list( set(data_columns).intersection( set(FARQUHARWHEAT_ELEMENTS_INPUTS) ) )
+    ############################################################################################
+    
     for current_id, current_group in element_inputs.groupby(ELEMENT_TOPOLOGY_COLUMNS):
         current_series = current_group.loc[current_group.first_valid_index()]
         current_dict = current_series[data_columns].to_dict()
@@ -55,6 +59,9 @@ def from_dataframe(element_inputs, axes_inputs):
 
     all_axes_dict = {}
     data_columns = axes_inputs.columns.difference(AXIS_TOPOLOGY_COLUMNS)
+    ############## 2024/6/5 zhao: add filter to extract the corresponding items ################
+    data_columns = list( set(data_columns).intersection( set(FARQUHARWHEAT_AXES_INPUTS) ) )
+    ############################################################################################
     for current_id, current_group in axes_inputs.groupby(AXIS_TOPOLOGY_COLUMNS):
         current_series = current_group.loc[current_group.first_valid_index()]
         current_dict = current_series[data_columns].to_dict()
