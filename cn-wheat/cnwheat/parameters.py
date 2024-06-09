@@ -183,30 +183,6 @@ class PhloemInitCompartments(object):
 PHLOEM_INIT_COMPARTMENTS = PhloemInitCompartments()
 
 
-###################### authored by zhao for water content simulation #################
-class XylemParameters(object):
-    """
-    Internal parameters of phloems.
-    """
-    def __init__(self):
-        self.ALPHA = 1  #: Proportion of structural mass containing substrate
-
-#: The instance of class :class:`cnwheat.parameters.XylemParameters` for current process
-XYLEM_PARAMETERS = XylemParameters()
-
-class XylemInitCompartments(object):
-    """
-    Initial values for compartments of phloem.
-    """
-    def __init__(self):
-        pass
-
-#: The instance of class :class:`cnwheat.parameters.XylemInitCompartments` for current process
-XYLEM_INIT_COMPARTMENTS = XylemInitCompartments()
-
-######################################################################################
-
-
 class GrainsParameters(object):
     """
     Internal parameters of grains.
@@ -460,8 +436,6 @@ class PhotosyntheticOrganElementInitCompartments(object):
         self.Tr = 0              #: initial value of Tr (Transpiration rate (mmol m-2 s-1)
         self.Ts = 12             #: initial value of Ts (Organ temperature)
         self.Ag = 0              #: initial value of Ag (Gross assimilation (:math:`\mu` mol m-2 s-1)
-        
-        # self.water = 20           # added by zhao for asobi calculation.
 
 
 #: The instance of class :class:`cnwheat.parameters.PhotosyntheticOrganElementInitCompartments` for current process

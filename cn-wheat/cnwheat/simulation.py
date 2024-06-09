@@ -151,7 +151,7 @@ class Simulation(object):
                                               'nitrates', 'proteins', 'starch', 'structure', 'sucrose'],
                                 model.HiddenZone: ['amino_acids', 'fructan', 'proteins', 'sucrose'],
                                 model.PhotosyntheticOrganElement: ['amino_acids', 'cytokinins', 'fructan',
-                                                                   'nitrates', 'proteins', 'starch', 'sucrose', 'triosesP'],# 'water'], ##################### ['water'] is added by zhao for asobi computation 
+                                                                   'nitrates', 'proteins', 'starch', 'sucrose', 'triosesP'], 
                                 model.Soil: ['nitrates']}
 
     #: the time index
@@ -461,7 +461,6 @@ class Simulation(object):
         :param float Tair: air temperature (°C)
         :param float Tsoil: soil temperature (°C)
         """
-
         logger = logging.getLogger(__name__)
 
         # logger.info('Initialization of the simulation...')

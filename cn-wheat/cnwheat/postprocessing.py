@@ -72,7 +72,9 @@ ORGANS_INDEXES = cnwheat_simulation.Simulation.ORGANS_INDEXES
 #: concatenation of :attr:`T_INDEX` and :attr:`ORGANS_INDEXES`
 ORGANS_T_INDEXES = cnwheat_simulation.Simulation.ORGANS_T_INDEXES
 #: organs post-processing variables
-ORGANS_POSTPROCESSING_VARIABLES = ['Conc_Amino_Acids', 'Conc_Nitrates', 'Conc_Sucrose', 'Conc_cytokinins', 'Dry_Mass', 'Proteins_N_Mass',  'N_tot', 'WSC_g']
+############# 2024/6/7 add the 'CN_ratio' entry as well #########################################
+ORGANS_POSTPROCESSING_VARIABLES = ['Conc_Amino_Acids', 'Conc_Nitrates', 'Conc_Sucrose', 'Conc_cytokinins', 'Dry_Mass', 'Proteins_N_Mass',  'N_tot', 'WSC_g'] + ['CN_ratio']
+#################################################################################################
 ORGANS_RUN_VARIABLES_ADDITIONAL = ['sucrose_consumption_mstruct', 'AA_consumption_mstruct', 'synthetized_mstruct']
 #: concatenation of :attr:`ORGANS_T_INDEXES`, :attr:`ORGANS_RUN_VARIABLES <cnwheat.simulation.Simulation.ORGANS_RUN_VARIABLES>` and :attr:`ORGANS_POSTPROCESSING_VARIABLES`
 ORGANS_RUN_POSTPROCESSING_VARIABLES = set(ORGANS_T_INDEXES + cnwheat_simulation.Simulation.ORGANS_RUN_VARIABLES + ORGANS_POSTPROCESSING_VARIABLES + ORGANS_RUN_VARIABLES_ADDITIONAL)
@@ -93,9 +95,11 @@ ELEMENTS_INDEXES = cnwheat_simulation.Simulation.ELEMENTS_INDEXES
 #: concatenation of :attr:`T_INDEX` and :attr:`ELEMENTS_INDEXES`
 ELEMENTS_T_INDEXES = cnwheat_simulation.Simulation.ELEMENTS_T_INDEXES
 #: elements post-processing variables
+################# 2024/6/7 zhao: add the 'CN_ratio' entry as well ###################################
 ELEMENTS_POSTPROCESSING_VARIABLES = ['Conc_Amino_Acids', 'Conc_Fructan', 'Conc_Nitrates', 'Conc_Proteins', 'Conc_Starch', 'Conc_Sucrose', 'Conc_TriosesP', 'Cont_Fructan_DM',
                                      'Conc_cytokinins', 'Surfacic_NS', 'NS', 'N_content', 'N_content_total_DM', 'N_tot', 'nb_replications', 'SLA', 'SLN',
-                                     'SLN_nonstruct', 'sum_dry_mass', 'Photosynthetic_efficiency', 'Cont_WSC_DM']
+                                     'SLN_nonstruct', 'sum_dry_mass', 'Photosynthetic_efficiency', 'Cont_WSC_DM'] + ['CN_ratio']
+######################################################################################################                                     
 ELEMENTS_RUN_VARIABLES_ADDITIONAL = ['length', 'PARa']
 #: concatenation of :attr:`ELEMENTS_T_INDEXES`, :attr:`ELEMENTS_RUN_VARIABLES <cnwheat.simulation.Simulation.ELEMENTS_RUN_VARIABLES>` and :attr:`ELEMENTS_POSTPROCESSING_VARIABLES`
 ELEMENTS_RUN_POSTPROCESSING_VARIABLES = set(ELEMENTS_T_INDEXES + cnwheat_simulation.Simulation.ELEMENTS_RUN_VARIABLES + ELEMENTS_RUN_VARIABLES_ADDITIONAL + ELEMENTS_POSTPROCESSING_VARIABLES)
@@ -851,6 +855,10 @@ def postprocessing(plants_df=None, axes_df=None, metamers_df=None, hiddenzones_d
                             (organs_df.fillna(0)['amino_acids'] * 1E-6 * cnwheat_model.EcophysiologicalConstants.N_MOLAR_MASS) +
                             (organs_df.fillna(0)['proteins'] * 1E-6 * cnwheat_model.EcophysiologicalConstants.N_MOLAR_MASS) +
                             organs_df.fillna(0)['Nstruct'])
+                            
+        #################### 2024/6/7 zhao: add the C/N ratio entry #################################
+        pp_organs_df.loc[:, 'CN_ratio'] = organs_df.apply(lambda row: row['C_g']/max(row['N_g'], 1e-10) if (row['C_g'] and row['N_g']) else None, axis=1) # zhao: set the minimal value for N
+        #############################################################################################
 
         pp_organs_df['N_tot'] = organs_df['N_g']
 
@@ -878,12 +886,12 @@ def postprocessing(plants_df=None, axes_df=None, metamers_df=None, hiddenzones_d
         pp_organs_df.loc[pp_organs_df.organ == 'grains', 'Dry_Mass'] = Grains.calculate_dry_mass(grains_df['structure'], grains_df['starch'], grains_df['proteins'])
         pp_organs_df.loc[pp_organs_df.organ == 'grains', 'WSC_g'] = Grains.calculate_WSC_g(grains_df['sucrose'], grains_df['starch'])
         pp_organs_df.loc[pp_organs_df.organ == 'grains', 'Proteins_N_Mass'] = Grains.calculate_protein_N_mass(grains_df['proteins'])
-        pp_organs_df = pp_organs_df.reindex(columns=ORGANS_RUN_POSTPROCESSING_VARIABLES, copy=False)
+        pp_organs_df = pp_organs_df.reindex(columns=ORGANS_RUN_POSTPROCESSING_VARIABLES, copy=False) # zhao: note the ORGANS_RUN_POSTPROCESSING_VARIABLES is a set, thus the order is not fixed.
         pp_organs_df['plant'] = pp_organs_df['plant'].astype(int)
-        ########## zhao: adding sorting process for readability ###################
+        ########## zhao: adding the sorting process for readability ###################
         pp_organs_df = pp_organs_df.reindex(sorted(pp_organs_df.columns), axis=1)
-        watching_column_names = ['t', 'organ', 'Dry_Mass', 'proteins', 'amino_acids', 'mstruct', 'structure', 'starch']
-        other_columns = list(set(pp_organs_df.columns)-set(watching_column_names))
+        watching_column_names = ['t', 'plant', 'axis', 'organ', 'Dry_Mass', 'CN_ratio', 'proteins', 'amino_acids', 'starch', 'sucrose', 'mstruct', 'structure', ]
+        other_columns = sorted(list(set(pp_organs_df.columns)-set(watching_column_names)))
         pp_organs_df = pp_organs_df[watching_column_names+other_columns]
         ###########################################################################
         returned_dataframes.append(pp_organs_df)
@@ -954,6 +962,10 @@ def postprocessing(plants_df=None, axes_df=None, metamers_df=None, hiddenzones_d
         pp_elements_df.loc[:, 'SLA'] = Element.calculate_SLA(elements_df['sum_dry_mass'], elements_df['green_area'])
         pp_elements_df.loc[pp_elements_df['is_growing'] == 1., 'SLA'] = np.nan
         pp_elements_df.loc[:, 'Photosynthetic_efficiency'] = elements_df['Ag'] / elements_df['PARa']
+        
+        ##################### 2024/6/7 add the CN_ratio entry #################################
+        pp_elements_df.loc[:, 'CN_ratio'] = elements_df.apply(lambda row: row['C_g']/max(row['N_g'], 1e-10) if (row['C_g'] and row['N_g']) else None, axis=1)
+        #######################################################################################
 
         grouped = elements_df.groupby('organ')
         for organ_type, parameters_class in \
@@ -974,6 +986,11 @@ def postprocessing(plants_df=None, axes_df=None, metamers_df=None, hiddenzones_d
             pp_curr_organ_elements_df.loc[:, 'R_residual'] = R_residual
         pp_elements_df = pp_elements_df.reindex(columns=ELEMENTS_RUN_POSTPROCESSING_VARIABLES, copy=False)
         pp_elements_df[['plant', 'metamer']] = pp_elements_df[['plant', 'metamer']].astype(int)
+        ########## 2024/6/7 zhao: adding the sorting process for readability ###################
+        watching_column_names = ELEMENTS_T_INDEXES+['green_area', 'CN_ratio', 'amino_acids', 'nitrates', 'proteins', 'starch', 'sucrose', 'triosesP', 'cytokinins']
+        other_columns = sorted(list(set(pp_elements_df.columns)-set(watching_column_names)))
+        pp_elements_df = pp_elements_df[watching_column_names+other_columns]
+        #######################################################################################
         returned_dataframes.append(pp_elements_df)
     else:
         returned_dataframes.append(pd.DataFrame({'A': []}))
@@ -1214,6 +1231,11 @@ def postprocessing(plants_df=None, axes_df=None, metamers_df=None, hiddenzones_d
 
         pp_axes_df = pp_axes_df.reindex(AXES_RUN_POSTPROCESSING_VARIABLES, axis=1, copy=False)
         pp_axes_df['plant'] = pp_axes_df['plant'].astype(int)
+        ########## 2024/6/7 zhao: adding the sorting process for readability ###################
+        watching_column_names = AXES_T_INDEXES + AXES_INDEXES+['sum_respi_roots', 'Total_Transpiration', 'C_exudated', 'mstruct', 'senesced_mstruct', ]
+        other_columns = sorted(list(set(pp_axes_df.columns)-set(watching_column_names)))
+        pp_axes_df = pp_axes_df[watching_column_names+other_columns]
+        #######################################################################################
         returned_dataframes.append(pp_axes_df)
     else:
         returned_dataframes.append(pd.DataFrame({'A': []}))

@@ -127,6 +127,26 @@ def label_alter_function(gg):
         
     return gg
 
+
+# 2024/6/7 zhao: TODO also output the parameters being used.
+def record_parameters(module_name, parameter_dict):
+    import yaml
+    SETTINGS_DIR = 'settings.yaml'
+
+    if record_parameters.first_calling: # the first calling, writing a new setting file
+        if parameter_dict:
+            dict_parameters = {module_name: parameter_dict}
+            with open(SETTINGS_DIR, 'w') as file:
+                yaml.dump(dict_parameters, file)
+            record_parameters.first_calling=False
+    else:
+        if parameter_dict:
+            dict_parameters = {module_name: parameter_dict}
+            with open(SETTINGS_DIR, 'a') as file:
+                yaml.dump(dict_parameters, file)
+    
+record_parameters.first_calling = True
+    
 """
     main
     ~~~~
@@ -150,7 +170,6 @@ HOUR_TO_SECOND_CONVERSION_FACTOR = 3600
 
 INPUTS_DIRPATH = 'inputs'
 GRAPHS_DIRPATH = 'graphs'
-# GRAPHS_DIRPATH = 'graphs_fructan_0_origin'
 
 # adelwheat inputs at t0
 ADELWHEAT_INPUTS_DIRPATH = os.path.join(INPUTS_DIRPATH, 'adelwheat')  # the directory adelwheat must contain files 'adel0000.pckl' and 'scene0000.bgeom'
@@ -381,6 +400,7 @@ def main(stop_time, run_simu=True, make_graphs=True):
         growthwheat_element_inputs_t0 = pd.read_csv(GROWTHWHEAT_ELEMENTS_INPUTS_FILEPATH)
         growthwheat_organs_inputs_t0 = pd.read_csv(GROWTHWHEAT_ORGANS_INPUTS_FILEPATH)
         growthwheat_axes_inputs_t0 = pd.read_csv(GROWTHWHEAT_AXES_INPUTS_FILEPATH)
+        update_growth_parameters = None
         growthwheat_facade_ = growthwheat_facade.GrowthWheatFacade(g,
                                                                    growthwheat_ts * hour_to_second_conversion_factor,
                                                                    growthwheat_hiddenzones_inputs_t0,
@@ -390,7 +410,8 @@ def main(stop_time, run_simu=True, make_graphs=True):
                                                                    shared_organs_inputs_outputs_df,
                                                                    shared_hiddenzones_inputs_outputs_df,
                                                                    shared_elements_inputs_outputs_df,
-                                                                   shared_axes_inputs_outputs_df)
+                                                                   shared_axes_inputs_outputs_df,
+                                                                   update_growth_parameters)
 
         # farquharwheat
         farquharwheat_elements_inputs_t0 = pd.read_csv(FARQUHARWHEAT_INPUTS_FILEPATH)
@@ -399,7 +420,7 @@ def main(stop_time, run_simu=True, make_graphs=True):
         # try increase the 'Sna_Vcmax25' to improve the efficiency of the photosynthesis
         # decrease the 'DELTA_CONVERGENCE' for refine the convergency
         # adapt the PARAM_TEMP for actual meteorlogical data for rice.
-        update_parameters_farquharwheat = {
+        update_farquharwheat_parameters = {
         'SurfacicProteins': False, 'NSC_Retroinhibition': False,
         'DELTA_CONVERGENCE': 0.000001,
         #################### 2023/11/02 parameter adaption based on kano san information, and use Ac constrain rather than Ap #################
@@ -412,13 +433,14 @@ def main(stop_time, run_simu=True, make_graphs=True):
                                                                          farquharwheat_elements_inputs_t0,
                                                                          farquharwheat_axes_inputs_t0,
                                                                          shared_elements_inputs_outputs_df,
-                                                                         update_parameters=update_parameters_farquharwheat)
+                                                                         update_parameters=update_farquharwheat_parameters)
 
         # elongwheat # Only for temperature related computations
         elongwheat_hiddenzones_inputs_t0 = pd.read_csv(ELONGWHEAT_HZ_INPUTS_FILEPATH)
         elongwheat_elements_inputs_t0 = pd.read_csv(ELONGWHEAT_ELEMENTS_INPUTS_FILEPATH)
         elongwheat_axes_inputs_t0 = pd.read_csv(ELONGWHEAT_AXES_INPUTS_FILEPATH)
-
+        update_elongwheat_parameters = None
+        
         elongwheat_facade_ = elongwheat_facade.ElongWheatFacade(g,
                                                                 elongwheat_ts * hour_to_second_conversion_factor,
                                                                 elongwheat_axes_inputs_t0,
@@ -427,7 +449,9 @@ def main(stop_time, run_simu=True, make_graphs=True):
                                                                 shared_axes_inputs_outputs_df,
                                                                 shared_hiddenzones_inputs_outputs_df,
                                                                 shared_elements_inputs_outputs_df,
-                                                                adel_wheat, option_static=True)
+                                                                adel_wheat, 
+                                                                update_parameters=update_elongwheat_parameters,
+                                                                option_static=True)
         # cnwheat
         cnwheat_organs_inputs_t0 = pd.read_csv(CNWHEAT_ORGANS_INPUTS_FILEPATH)
         cnwheat_hiddenzones_inputs_t0 = pd.read_csv(CNWHEAT_HIDDENZONE_INPUTS_FILEPATH)
@@ -468,7 +492,7 @@ def main(stop_time, run_simu=True, make_graphs=True):
                                                        shared_soils_inputs_outputs_df)
                                                        
         # define organs for which the variable 'max_proteins' is fixed
-        # zhao: elements in the 'forced_max_protein_elements' is allowed to senesce.
+        # zhao: elements in the 'forced_max_protein_elements' will disable to update the max_protein value such that senesce can be controlled.
         # forced_max_protein_elements = {(1, 'MS', 9, 'blade', 'LeafElement1'), (1, 'MS', 10, 'blade', 'LeafElement1'), (1, 'MS', 11, 'blade', 'LeafElement1'), (2, 'MS', 9, 'blade', 'LeafElement1'),
                                        # (2, 'MS', 10, 'blade', 'LeafElement1'), (2, 'MS', 11, 'blade', 'LeafElement1')}
         # zhao: also add internode to senesce. The default behavior is to update the max_proteins according to the proteins in the first run of program, but the listed element here will use the input value as it is.                      
@@ -513,11 +537,11 @@ def main(stop_time, run_simu=True, make_graphs=True):
         # g.property('diameter')[151+1] = 0.00565
         # g.property('diameter')[135+1] = 0.00620
         
-        # zhao: set the max protein leaf as 0, because its 'update_max_protein' is also True, senesce (should) not happen to it
+        # zhao: the default behavior is to update the max_proteins whenever the actual value is bigger.
         ############ 2024/5/16 calibrated ######################################
-        # g.property('max_proteins')[167+14] = 0 # the second leaf
+        g.property('max_proteins')[167+14] = 0 # the second leaf
         ########################################################################
-        g.property('max_proteins')[197] = 0 # the flag leaf
+        # g.property('max_proteins')[197] = 0 # the flag leaf
         
         # define the start and the end of the whole simulation (in hours)
         # start_time = 252   # (h)
@@ -659,11 +683,19 @@ def main(stop_time, run_simu=True, make_graphs=True):
             all_soils_inputs_outputs.rename({'level_0': 't'}, axis=1, inplace=True)
             all_soils_inputs_outputs.to_csv(SOILS_STATES_FILEPATH, na_rep='NA', index=False, float_format='%.{}f'.format(INPUTS_OUTPUTS_PRECISION))
 
+            ################# 2024/6/7 zhao: add configuration output #############################
+            for module_name, paramter_dict in (('senescence', update_senescwheat_parameters),
+                                               ('growth', update_growth_parameters),
+                                               ('farquhar', update_farquharwheat_parameters),
+                                               ('elongate', update_elongwheat_parameters),
+                                               ('CN', update_cnwheat_parameters)):
+                record_parameters(module_name, paramter_dict)
+                                               
     # -POST-PROCESSING##
 
     if make_graphs:
         generate_graphs()
-
+        
 
 def generate_graphs():
 
@@ -736,6 +768,17 @@ def generate_graphs():
                                         elements_postprocessing_df=postprocessing_df_dict[elements_postprocessing_file_basename],
                                         soils_postprocessing_df=postprocessing_df_dict[soils_postprocessing_file_basename],
                                         graphs_dirpath=GRAPHS_DIRPATH)
+                                        
+    ################### 2024/6/7 zhao: clean up the output folder after post-processing ####################################
+    import shutil
+    try:
+        shutil.rmtree(OUTPUTS_DIRPATH)
+    except Exception as ex:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+        message = template.format(type(ex).__name__, ex.args)
+        print(message, fname, exc_tb.tb_lineno)
 
     #
     # x_name = 't'
@@ -808,4 +851,3 @@ def generate_graphs():
 
 if __name__ == '__main__':
     main(743, run_simu=True, make_graphs=True)
-    # main(20, run_simu=True, make_graphs=True)
