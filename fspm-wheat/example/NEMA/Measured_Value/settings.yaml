@@ -1,16 +1,6 @@
-senescence:
-  SENESCENCE_MAX_RATE:
-    blade: 8.0e-10
-    stem: 4.0e-10
 farquhar:
   DELTA_CONVERGENCE: 1.0e-06
   NSC_Retroinhibition: false
   SurfacicProteins: false
-CN:
-  grains:
-    FILLING_END: 5076000
-    FILLING_INIT: 1296000
-    VMAX_STARCH: 10
-  roots:
-    K_AMINO_ACIDS_EXPORT: 0.00025
-    K_NITRATE_EXPORT: 1.0e-06
+start_time: 960
+stop_time: 2135

@@ -129,24 +129,64 @@ def label_alter_function(gg):
 
 
 # 2024/6/7 zhao: TODO also output the parameters being used.
-def record_parameters(module_name, parameter_dict):
-    import yaml
-    SETTINGS_DIR = 'settings.yaml'
+def static_vars(**kwargs):
+    def decorate(func):
+        for k in kwargs:
+            setattr(func, k, kwargs[k])
+        return func
+    return decorate
 
-    if record_parameters.first_calling: # the first calling, writing a new setting file
-        if parameter_dict:
-            dict_parameters = {module_name: parameter_dict}
-            with open(SETTINGS_DIR, 'w') as file:
-                yaml.dump(dict_parameters, file)
-            record_parameters.first_calling=False
-    else:
-        if parameter_dict:
-            dict_parameters = {module_name: parameter_dict}
-            with open(SETTINGS_DIR, 'a') as file:
-                yaml.dump(dict_parameters, file)
-    
-record_parameters.first_calling = True
-    
+# authored by zhao
+# iterate over the leaf elements and stem elements in internode
+# if the green length is shorter than the senesced_length_element
+# then set the 'is_green' to false for display purpose
+def display_seneced_element(g):
+    for vid in g.vertices_iter(5):
+        node = g.node(vid)
+        if node.length and node.length > 0:
+            if node.label.startswith('Leaf') or (node.label.startswith('Stem') and g.node(g.complex(vid)).label.startswith('ear')):
+                # senesced_length = node.properties().get('senesced_length_element', 0)
+                # green_length = node.length - senesced_length
+                # node.is_green = min(max(1 - float(senesced_length/node.length), 0.0),1.0)
+                node.is_green = min(max(node.green_area/node.area,0.0),1.0)
+                if node.label.startswith('Leaf'):
+                    logger.info('{} area:{}, new_green_area: {}, ratio: {}'.format(node._vid, node.area, node.green_area, node.green_area/node.area))
+    return g
+            
+
+############ 2024/6/13 zhao: add a function to log the input data of the upper 4 metamer, to ensure their correctness #######################
+def update(d, u):
+    for k, v in u.items():
+        if isinstance(v, dict):
+            d[k] = update(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d
+            
+def input_blade_data_logger(g, observe_properties=['green_area', 'mstruct', 'proteins', 'width', 'length']):
+    from collections import OrderedDict
+    from alinea.adel.mtg_editions import find_label
+    import yaml
+    metamer_labels = ['metamer'+str(no) for no in (9,10,11,12,13,14)] # metamers to be recorded where metamer13 is peduncle, and metamer14 is the ear
+    recorder_dict = {}
+    for m_label in metamer_labels:
+        found_metamer_vid = find_label(m_label, g, 2)  # 2 is the main stem node no.
+        found_Element_vid = find_label('LeafElement1', g, found_metamer_vid[0])
+        if found_Element_vid: # leaf element
+            values = list( map(lambda x: float(x) if x else None, map( g.node(found_Element_vid[0]).properties().get, observe_properties)) )
+            update(recorder_dict, {m_label: {g.node(found_Element_vid[0]).label: dict(zip(observe_properties, values)) } } )
+        
+        found_Element_vid = find_label('StemElement', g, found_metamer_vid[0])
+        if found_Element_vid: # stem element
+            for eid in found_Element_vid:
+                values = list( map(lambda x: float(x) if x else None, map( g.node(eid).properties().get, observe_properties)) )
+                update(recorder_dict,{m_label: {'/'.join([g.node(g.complex(eid)).label, g.node(eid).label]): dict(zip(observe_properties, values)) } } )
+
+    RECORD_DIR = 'Upper4MetamerInput.yaml'
+    with open(RECORD_DIR, 'w') as file:
+        yaml.dump( OrderedDict((k, recorder_dict.get(k)) for k in metamer_labels) , file)  
+#############################################################################################################################################
+
 """
     main
     ~~~~
@@ -186,9 +226,9 @@ CNWHEAT_SOILS_INPUTS_FILEPATH = os.path.join(CNWHEAT_INPUTS_DIRPATH, 'soils_inpu
 
 # farquharwheat inputs at t0
 FARQUHARWHEAT_INPUTS_DIRPATH = os.path.join(INPUTS_DIRPATH, 'integrated')
-FARQUHARWHEAT_INPUTS_FILEPATH = os.path.join(FARQUHARWHEAT_INPUTS_DIRPATH, 'inputs.csv')
+FARQUHARWHEAT_INPUTS_FILEPATH = os.path.join(FARQUHARWHEAT_INPUTS_DIRPATH, 'elements_inputs.csv')
 FARQUHARWHEAT_AXES_INPUTS_FILEPATH = os.path.join(FARQUHARWHEAT_INPUTS_DIRPATH, 'SAM_inputs.csv')
-METEO_FILEPATH = os.path.join(FARQUHARWHEAT_INPUTS_DIRPATH, 'weather_data_kumada-0521.csv')
+METEO_FILEPATH = os.path.join(FARQUHARWHEAT_INPUTS_DIRPATH, 'weather_data_kumada-all.csv')
 # CARIBU_FILEPATH = os.path.join(FARQUHARWHEAT_INPUTS_DIRPATH, 'inputs_eabs.csv')
 # alter the caribu file path for interpolation of the real data. The file must couple with the 'calculate_PARa_by_interploation_df' function
 CARIBU_FILEPATH = os.path.join(FARQUHARWHEAT_INPUTS_DIRPATH, 'inputs_Eabs(origin version).csv')
@@ -315,25 +355,6 @@ def calculate_PARa_from_df(g, Eabs_df, PARi, multiple_sources=False, ratio_diffu
 
     return PARa_element_data_dict
 
-# authored by zhao
-# iterate over the leaf elements and stem elements in internode
-# if the green length is shorter than the senesced_length_element
-# then set the 'is_green' to false for display purpose
-def display_seneced_element(g):
-    for vid in g.vertices_iter(5):
-        node = g.node(vid)
-        if node.length and node.length > 0:
-            if node.label.startswith('Leaf') or (node.label.startswith('Stem') and g.node(g.complex(vid)).label.startswith('ear')):
-                # senesced_length = node.properties().get('senesced_length_element', 0)
-                # green_length = node.length - senesced_length
-                # node.is_green = min(max(1 - float(senesced_length/node.length), 0.0),1.0)
-                node.is_green = min(max(node.green_area/node.area,0.0),1.0)
-                if node.label.startswith('Leaf'):
-                    logger.info('{} area:{}, new_green_area: {}, ratio: {}'.format(node._vid, node.area, node.green_area, node.green_area/node.area))
-    return g
-            
-
-
 def main(stop_time, run_simu=True, make_graphs=True):
     if run_simu:
         meteo = pd.read_csv(METEO_FILEPATH, index_col='t')
@@ -354,12 +375,24 @@ def main(stop_time, run_simu=True, make_graphs=True):
         adel_wheat = AdelDyn(seed=1234, stand=stand, aspect='square', scene_unit='m', nplants = 500, duplicate=10)
         g = adel_wheat.load(dir=ADELWHEAT_INPUTS_DIRPATH)
         
-        # zhao for test of the utilization function
+        # zhao: add the top base elements so that update_geometry function can work
         g = label_alter_function(insert_base_top_element(g))
-        g = adel_wheat.update_geometry(g) # NE FONCTIONNE PAS car MTG non compatible (pas de top et base element)
+        # zhao: set the internode length and visibile length in the organ level only in order to get a correct 3D geometry model.
+        # zhao: the settings must be done here so that geometry model will be updated correctly.
+        # zhao: note the mesh is created using the data in the organ level, and the element level data will be overwrite within the update_geometry
+        # zhao: whereas the following data load process will be directly write into the element level, so the computation will be OK
+        # zhao: but the data in element level and organ level may be DISAGREE! (so be caution if calling update_geometry after the element data has been written
+        g.property('length')[184] = .11  # metamer12 internode organ
+        g.property('visible_length')[184] = .11  # metamer12 internode organ
+        g.property('length')[168] = .12  # metamer11 internode organ
+        g.property('visible_length')[168] = .12  # metamer11 internode organ
+        g.property('length')[152] = .081 # metamer10 internode organ
+        g.property('visible_length')[152] = 0 # metamer10 internode organ
+        g.property('length')[136] = .079 # metamer9 internode organ
+        g.property('visible_length')[136] = 0 # metamer9 internode organ
+        g.property('position')[1] = (0,0,0)
+        g = adel_wheat.update_geometry(g, static_element=False) # NE FONCTIONNE PAS car MTG non compatible (pas de top et base element)
         # zhao: record the length for the peduncle and ear to reset them after loading data from files.
-        record_peduncle_length = g.property('length')[203]
-        record_ear_length = g.property('length')[209]
         
         # create empty dataframes to shared data between the models
         shared_axes_inputs_outputs_df = pd.DataFrame()
@@ -379,11 +412,11 @@ def main(stop_time, run_simu=True, make_graphs=True):
         senescwheat_organs_inputs_t0 = pd.read_csv(SENESCWHEAT_ORGANS_INPUTS_FILEPATH)
         senescwheat_axes_inputs_t0 = pd.read_csv(SENESCWHEAT_AXES_INPUTS_FILEPATH)
         senescwheat_elements_inputs_t0 = pd.read_csv(SENESCWHEAT_ELEMENTS_INPUTS_FILEPATH)
-        # update_senescwheat_parameters = None
+        update_senescwheat_parameters = None
         # update_senescwheat_parameters = {'FRACTION_N_MAX' : {'blade': 0.002, 'stem': 0.00175}} # zhao: lower the senesce threshold to keep the blade alive.
         #################### 2024/05/16 calibrated ###########################
             ########## 2024/05/24 change the SENESCENCE_MAX_RATE to a dictionary to sperate the ear senesce rate settings: 'stem' is for ear ##########
-        update_senescwheat_parameters = {'SENESCENCE_MAX_RATE': {'blade': 8E-10, 'stem': 4E-10 }} # 8E-10
+        # update_senescwheat_parameters = {'SENESCENCE_MAX_RATE': {'blade': 9E-10, 'stem': 4E-10 }} # 8E-10
         ###########################################################################################################################################
         senescwheat_facade_ = senescwheat_facade.SenescWheatFacade(g,
                                                                    senescwheat_ts * hour_to_second_conversion_factor,
@@ -467,15 +500,13 @@ def main(stop_time, run_simu=True, make_graphs=True):
                                                              # 'SIGMA_AMINO_ACIDS': 1,
                                                              # },
                                      # }
-        update_cnwheat_parameters = {
-            # 'PhotosyntheticOrgan': {'VMAX_SFRUCTAN_POT': 0, },
-            # 'grains': {'FILLING_INIT': 15*24*3600, 'FILLING_END':900*3600,},
-            ########### 2024/06/15 calibrated ######################################
-            'grains': {'FILLING_INIT': 15*24*3600, 'FILLING_END':(15*24+1050)*3600, 'VMAX_STARCH': 10, },
-            'roots': {'K_AMINO_ACIDS_EXPORT': 2.5E-4, 'K_NITRATE_EXPORT': 1E-6, },  # 'K_AMINO_ACIDS_EXPORT': 1.5E-4, 'K_NITRATE_EXPORT': 1E-6, 
-            # 'PhotosyntheticOrgan': {'VMAX_SFRUCTAN_POT': 0, 'SIGMA_SUCROSE': 1e-01}#, 'SIGMA_AMINO_ACIDS': 1e-2},
-            #######################################################################
-            }
+        update_cnwheat_parameters = None                             
+        # update_cnwheat_parameters = {
+            # ########### 2024/06/15 calibrated ######################################
+            # 'grains': {'FILLING_INIT': 15*24*3600, 'FILLING_END':(15*24+1050)*3600, 'VMAX_STARCH': 10, },
+            # 'roots': {'K_AMINO_ACIDS_EXPORT': 2.5E-4, 'K_NITRATE_EXPORT': 1E-6, },  # 'K_AMINO_ACIDS_EXPORT': 1.5E-4, 'K_NITRATE_EXPORT': 1E-6, 
+            # #######################################################################
+            # }
 
         cnwheat_facade_ = cnwheat_facade.CNWheatFacade(g,
                                                        cnwheat_ts * hour_to_second_conversion_factor,
@@ -489,8 +520,7 @@ def main(stop_time, run_simu=True, make_graphs=True):
                                                        shared_organs_inputs_outputs_df,
                                                        shared_hiddenzones_inputs_outputs_df,
                                                        shared_elements_inputs_outputs_df,
-                                                       shared_soils_inputs_outputs_df)
-                                                       
+                                                       shared_soils_inputs_outputs_df)                                            
         # define organs for which the variable 'max_proteins' is fixed
         # zhao: elements in the 'forced_max_protein_elements' will disable to update the max_protein value such that senesce can be controlled.
         # forced_max_protein_elements = {(1, 'MS', 9, 'blade', 'LeafElement1'), (1, 'MS', 10, 'blade', 'LeafElement1'), (1, 'MS', 11, 'blade', 'LeafElement1'), (2, 'MS', 9, 'blade', 'LeafElement1'),
@@ -499,55 +529,26 @@ def main(stop_time, run_simu=True, make_graphs=True):
         forced_max_protein_elements = {(1, 'MS', 9, 'blade', 'LeafElement1'), (1, 'MS', 10, 'blade', 'LeafElement1'), (1, 'MS', 11, 'blade', 'LeafElement1')}#, (1, 'MS', 14, 'ear', 'StemElement')}
         # g.property('max_proteins')[209] = 10 # force set the ear stemElement, and lower it to keep it alive.
         
-        # zhao: add internode length manully, and reset the length for the peduncle and ear, for these are wiredly updated.
-        g.property('length')[184] = .11
-        g.property('length')[168] = .12
-        g.property('length')[152] = .081
-        g.property('length')[136] = .079
-        g.property('length')[203] = record_peduncle_length
-        g.property('length')[209] = record_ear_length
-        g.property('position')[1] = (0,0,0)
-        g = adel_wheat.update_geometry(g)
 
         # manually set the 'width' according to the measured values on the element level
-        g.property('width')[197] = 0.0178
-        g.property('width')[167+14] = 0.0174
-        g.property('width')[151+14] = 0.0166
-        g.property('width')[135+14] = 0.0142
-        # g.property('shape_max_width')[183+11] = 0.0105
-        # g.property('shape_max_width')[167+11] = 0.00925
-        # g.property('shape_max_width')[151+11] = 0.00775
-        # g.property('shape_max_width')[135+11] = 0.00850
-        # sheath
-        # g.property('width')[183+9] = 0.00330
-        # g.property('width')[167+9] = 0.00410
-        # g.property('width')[151+9] = 0.00565
-        # g.property('width')[135+9] = 0.00620
-        # g.property('diameter')[183+6] = 0.00330
-        # g.property('diameter')[167+6] = 0.00410
-        # g.property('diameter')[151+6] = 0.00565
-        # g.property('diameter')[135+6] = 0.00620
-        # internode
-        # g.property('width')[183+4] = 0.00330
-        # g.property('width')[167+4] = 0.00410
-        # g.property('width')[151+4] = 0.00565
-        # g.property('width')[135+4] = 0.00620
-        # g.property('diameter')[183+1] = 0.00330
-        # g.property('diameter')[167+1] = 0.00410
-        # g.property('diameter')[151+1] = 0.00565
-        # g.property('diameter')[135+1] = 0.00620
+        # g.property('width')[197] = 0.0178    # metamer12 blade (flag leaf)
+        # g.property('width')[167+14] = 0.0174 # metamer11 blade
+        # g.property('width')[151+14] = 0.0166 # metamer10 blade
+        # g.property('width')[135+14] = 0.0142 # metamer9 blade
         
         # zhao: the default behavior is to update the max_proteins whenever the actual value is bigger.
         ############ 2024/5/16 calibrated ######################################
-        g.property('max_proteins')[167+14] = 0 # the second leaf
+        # g.property('max_proteins')[167+14] = 0 # the second leaf
         ########################################################################
-        # g.property('max_proteins')[197] = 0 # the flag leaf
+        #### zhao: log the input blade data ########
+        input_blade_data_logger(g)
+        ############################################
         
         # define the start and the end of the whole simulation (in hours)
         # start_time = 252   # (h)
         # stop_time = start_time + 35*24  # stop_time=252+35*24=1092 the span for actual measurement is 35 days
-        start_time = 0
-        stop_time = 1967-960
+        start_time = 960
+        stop_time = 2135
         
        
         # # manually set the interpolation time interval
@@ -590,7 +591,6 @@ def main(stop_time, run_simu=True, make_graphs=True):
                     # run SenescWheat
                     print('t senescwheat is {}'.format(t_senescwheat))
                     if t_senescwheat > start_time+288:
-                        # g.node(151+14).max_proteins = 0  # zhao: forcelly set the max_protein of blade in phytomer 10 as 0 to activate senesce
                         ########################### 2024/5/16 calibrated ############################
                         g.node(197).max_proteins = 0 # flag leaf, set on the senescence
                         forced_max_protein_elements = forced_max_protein_elements.union( {(1, 'MS', 12, 'blade', 'LeafElement1')} )
@@ -661,6 +661,11 @@ def main(stop_time, run_simu=True, make_graphs=True):
             print('\n', 'Simulation run in ', str(datetime.timedelta(seconds=execution_time)))
             
             adel_wheat.save(g)
+            
+            ################# 2024/6/11 zhao: create the output folder first, in case it is removed by the postprocessing procedure #############
+            if not os.path.exists(OUTPUTS_DIRPATH):
+                os.makedirs(OUTPUTS_DIRPATH)
+            #####################################################################################################################################
 
             # write all inputs and outputs to CSV files
             all_axes_inputs_outputs = pd.concat(axes_all_data_list, keys=all_simulation_steps)
@@ -684,13 +689,18 @@ def main(stop_time, run_simu=True, make_graphs=True):
             all_soils_inputs_outputs.to_csv(SOILS_STATES_FILEPATH, na_rep='NA', index=False, float_format='%.{}f'.format(INPUTS_OUTPUTS_PRECISION))
 
             ################# 2024/6/7 zhao: add configuration output #############################
-            for module_name, paramter_dict in (('senescence', update_senescwheat_parameters),
-                                               ('growth', update_growth_parameters),
-                                               ('farquhar', update_farquharwheat_parameters),
-                                               ('elongate', update_elongwheat_parameters),
-                                               ('CN', update_cnwheat_parameters)):
-                record_parameters(module_name, paramter_dict)
-                                               
+            with open(SETTINGS_DIR, 'w') as file:
+                for module_name, paramter_dict in (('senescence', update_senescwheat_parameters),
+                                                   ('growth', update_growth_parameters),
+                                                   ('farquhar', update_farquharwheat_parameters),
+                                                   ('elongate', update_elongwheat_parameters),
+                                                   ('CN', update_cnwheat_parameters),
+                                                   ('start_time', start_time),
+                                                   ('stop_time', stop_time)):
+                    if parameter_dict:
+                        dict_parameters = {module_name: parameter_dict}
+                        yaml.dump(dict_parameters, file)
+
     # -POST-PROCESSING##
 
     if make_graphs:
