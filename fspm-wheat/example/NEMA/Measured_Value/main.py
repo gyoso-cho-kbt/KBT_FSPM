@@ -19,6 +19,7 @@ from openalea.plantgl.all import Viewer, Scene
 from openalea.plantgl.math import Vector3
 from math import radians
 
+import yaml
 import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename=r'C:\Users\gyoso.cho.TIRD\source\WheatFspm\WheatFspm\fspm-wheat\example\NEMA\Measured_Value\mylog.log', level=logging.INFO, filemode='a')
@@ -210,6 +211,7 @@ HOUR_TO_SECOND_CONVERSION_FACTOR = 3600
 
 INPUTS_DIRPATH = 'inputs'
 GRAPHS_DIRPATH = 'graphs'
+SETTINGS_DIR = 'settings.yaml'
 
 # adelwheat inputs at t0
 ADELWHEAT_INPUTS_DIRPATH = os.path.join(INPUTS_DIRPATH, 'adelwheat')  # the directory adelwheat must contain files 'adel0000.pckl' and 'scene0000.bgeom'
@@ -382,6 +384,7 @@ def main(stop_time, run_simu=True, make_graphs=True):
         # zhao: note the mesh is created using the data in the organ level, and the element level data will be overwrite within the update_geometry
         # zhao: whereas the following data load process will be directly write into the element level, so the computation will be OK
         # zhao: but the data in element level and organ level may be DISAGREE! (so be caution if calling update_geometry after the element data has been written
+        ############# 2024/6/19 zhao: calibrated #################################################
         g.property('length')[184] = .11  # metamer12 internode organ
         g.property('visible_length')[184] = .11  # metamer12 internode organ
         g.property('length')[168] = .12  # metamer11 internode organ
@@ -390,6 +393,7 @@ def main(stop_time, run_simu=True, make_graphs=True):
         g.property('visible_length')[152] = 0 # metamer10 internode organ
         g.property('length')[136] = .079 # metamer9 internode organ
         g.property('visible_length')[136] = 0 # metamer9 internode organ
+        #########################################################################################
         g.property('position')[1] = (0,0,0)
         g = adel_wheat.update_geometry(g, static_element=False) # NE FONCTIONNE PAS car MTG non compatible (pas de top et base element)
         # zhao: record the length for the peduncle and ear to reset them after loading data from files.
@@ -413,10 +417,9 @@ def main(stop_time, run_simu=True, make_graphs=True):
         senescwheat_axes_inputs_t0 = pd.read_csv(SENESCWHEAT_AXES_INPUTS_FILEPATH)
         senescwheat_elements_inputs_t0 = pd.read_csv(SENESCWHEAT_ELEMENTS_INPUTS_FILEPATH)
         update_senescwheat_parameters = None
-        # update_senescwheat_parameters = {'FRACTION_N_MAX' : {'blade': 0.002, 'stem': 0.00175}} # zhao: lower the senesce threshold to keep the blade alive.
         #################### 2024/05/16 calibrated ###########################
             ########## 2024/05/24 change the SENESCENCE_MAX_RATE to a dictionary to sperate the ear senesce rate settings: 'stem' is for ear ##########
-        # update_senescwheat_parameters = {'SENESCENCE_MAX_RATE': {'blade': 9E-10, 'stem': 4E-10 }} # 8E-10
+        update_senescwheat_parameters = {'SENESCENCE_MAX_RATE': {'blade': 9E-10, 'stem': 4E-10 }}
         ###########################################################################################################################################
         senescwheat_facade_ = senescwheat_facade.SenescWheatFacade(g,
                                                                    senescwheat_ts * hour_to_second_conversion_factor,
@@ -499,14 +502,14 @@ def main(stop_time, run_simu=True, make_graphs=True):
                                      # 'PhotosyntheticOrgan': {'VMAX_SFRUCTAN_POT': 0, 
                                                              # 'SIGMA_AMINO_ACIDS': 1,
                                                              # },
-                                     # }
-        update_cnwheat_parameters = None                             
-        # update_cnwheat_parameters = {
-            # ########### 2024/06/15 calibrated ######################################
-            # 'grains': {'FILLING_INIT': 15*24*3600, 'FILLING_END':(15*24+1050)*3600, 'VMAX_STARCH': 10, },
-            # 'roots': {'K_AMINO_ACIDS_EXPORT': 2.5E-4, 'K_NITRATE_EXPORT': 1E-6, },  # 'K_AMINO_ACIDS_EXPORT': 1.5E-4, 'K_NITRATE_EXPORT': 1E-6, 
-            # #######################################################################
-            # }
+                                     # }                           
+        update_cnwheat_parameters = {
+            # 'roots': {'K_AMINO_ACIDS_EXPORT': 2.5E-4, 'K_NITRATE_EXPORT': 1E-6, },   #{'K_AMINO_ACIDS_EXPORT': 25*3E-5, 'K_NITRATE_EXPORT': 25*1E-6}
+            ########### 2024/06/15 calibrated ######################################
+            'grains': {'FILLING_INIT': 15*24*3600, 'FILLING_END':(15*24+1050)*3600, 'VMAX_STARCH': 10, },
+            'roots': {'K_AMINO_ACIDS_EXPORT': 2.5E-4, 'K_NITRATE_EXPORT': 1E-6, },  # 'K_AMINO_ACIDS_EXPORT': 1.5E-4, 'K_NITRATE_EXPORT': 1E-6, 
+            #######################################################################
+            }
 
         cnwheat_facade_ = cnwheat_facade.CNWheatFacade(g,
                                                        cnwheat_ts * hour_to_second_conversion_factor,
@@ -538,15 +541,13 @@ def main(stop_time, run_simu=True, make_graphs=True):
         
         # zhao: the default behavior is to update the max_proteins whenever the actual value is bigger.
         ############ 2024/5/16 calibrated ######################################
-        # g.property('max_proteins')[167+14] = 0 # the second leaf
+        g.property('max_proteins')[167+14] = 0 # the second leaf
         ########################################################################
         #### zhao: log the input blade data ########
         input_blade_data_logger(g)
         ############################################
         
         # define the start and the end of the whole simulation (in hours)
-        # start_time = 252   # (h)
-        # stop_time = start_time + 35*24  # stop_time=252+35*24=1092 the span for actual measurement is 35 days
         start_time = 960
         stop_time = 2135
         
@@ -690,7 +691,7 @@ def main(stop_time, run_simu=True, make_graphs=True):
 
             ################# 2024/6/7 zhao: add configuration output #############################
             with open(SETTINGS_DIR, 'w') as file:
-                for module_name, paramter_dict in (('senescence', update_senescwheat_parameters),
+                for module_name, parameter_dict in (('senescence', update_senescwheat_parameters),
                                                    ('growth', update_growth_parameters),
                                                    ('farquhar', update_farquharwheat_parameters),
                                                    ('elongate', update_elongwheat_parameters),
@@ -780,15 +781,15 @@ def generate_graphs():
                                         graphs_dirpath=GRAPHS_DIRPATH)
                                         
     ################### 2024/6/7 zhao: clean up the output folder after post-processing ####################################
-    import shutil
-    try:
-        shutil.rmtree(OUTPUTS_DIRPATH)
-    except Exception as ex:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-        message = template.format(type(ex).__name__, ex.args)
-        print(message, fname, exc_tb.tb_lineno)
+    # import shutil
+    # try:
+        # shutil.rmtree(OUTPUTS_DIRPATH)
+    # except Exception as ex:
+        # exc_type, exc_obj, exc_tb = sys.exc_info()
+        # fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        # template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+        # message = template.format(type(ex).__name__, ex.args)
+        # print(message, fname, exc_tb.tb_lineno)
 
     #
     # x_name = 't'

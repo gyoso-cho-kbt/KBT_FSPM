@@ -2,7 +2,7 @@
 - - - metamer9
     - LeafElement1:
         green_area: 0.00149
-        length: 1.0
+        length: 0.205
         mstruct: 0.05616
         proteins: 98.91818182
         width: 0.0142
@@ -21,7 +21,7 @@
   - - metamer10
     - LeafElement1:
         green_area: 0.00275
-        length: 1.0
+        length: 0.252
         mstruct: 0.11232
         proteins: 248.8909091
         width: 0.0166
@@ -40,13 +40,13 @@
   - - metamer11
     - LeafElement1:
         green_area: 0.00314
-        length: 1.0
+        length: 0.258
         mstruct: 0.12272
         proteins: 261.9753247
         width: 0.0174
       internode/StemElement:
         green_area: null
-        length: null
+        length: 0.170154
         mstruct: 0.0658
         proteins: 25.09464286
         width: 0.003
@@ -59,7 +59,7 @@
   - - metamer12
     - LeafElement1:
         green_area: 0.00269
-        length: 1.0
+        length: 0.189
         mstruct: 0.08736
         proteins: 242.5090909
         width: 0.0178
@@ -71,21 +71,21 @@
         width: 0.003
       sheath/StemElement:
         green_area: 0.0006
-        length: 1.0
+        length: 0.1952
         mstruct: 0.10204
         proteins: 50.52305195
         width: 0.004
   - - metamer13
     - peduncle/StemElement:
         green_area: null
-        length: 1.0
+        length: 0.15
         mstruct: null
         proteins: null
         width: 0.003
   - - metamer14
     - ear/StemElement:
         green_area: 0.0015
-        length: 1.0
+        length: 0.1068
         mstruct: 0.153
         proteins: 224.0
         width: 0.012
