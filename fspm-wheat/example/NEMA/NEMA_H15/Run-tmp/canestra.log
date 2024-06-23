@@ -1,0 +1,50 @@
+ Fichier matrice   :: kojxfr73
+ Projection disk   :: 52x52
+ nb especes (optiques) = 3
+-_-_-_-_-_  Proprietes optiques chargees
+build-scons\src\cpp\Canestra\src\radioxity.cpp : byfile
+ main() : Bornemin[0] = -0.125  Bornemax[0] = 0.125
+ main() : Bornemin[1] = -0.12  Bornemax[1] = 0.12
+ main() : Bornemin[2] = 3.96891e-011  Bornemax[2] = 0.725423
+
+0.057 cpu seconds (0' 0'') 
+<!> Voxel::construction() -> fichier "grille_par" pas trouve 
+   => valeurs par defaut des parametres de subivision adaptative
+Default threshold  = 50 - ratio = 1
+Taille voxel = 0.5
+delta2[0]= 0.125 
+xxx  bmin[0]= -0.25 - bmax[0]= 0.25 - nb_vox[0]= 1 
+delta2[1]= 0.13 
+xxx  bmin[1]= -0.25 - bmax[1]= 0.25 - nb_vox[1]= 1 
+delta2[2]= 0.137289 
+xxx  bmin[2]= -0.137289 - bmax[2]= 0.862711 - nb_vox[2]= 2 
+Voxel[creation]declaration de SI
+build-scons\src\cpp\Canestra\src\voxel.cpp : 171
+	 max subdiv[0] = 0
+	 max subdiv[1] = 0
+	 max subdiv[2] = 3
+Voxel[construction] nbre de boites cre'e'es = 2
+Voxel[construction] FIN
+>>> Canestra[main] Grille construite en 0.014 cpu seconds (0' 0'') 
+ Homogene : 1  -0  0  0
+ Homogene : 0  1  0  0
+ Homogene : 0.97572  -0  0.21902  0
+param. projplan : dir = (0.21902,-0,-0.97572) - Esun = 1
+>>> Canestra[main] calcul du direct en 0.072 cpu seconds (0' 0'') 
+ Version longue : calcul des FF et des Coeff de Bfar
+HDMatrices : NZ=.\nz_kojxfr73, DG=.\diag_kojxfr73, BF=.\Bfar_kojxfr73
+ hdmat_init() : fin
+
+Canopy::calc_FF_Bfar() denv=Rsph=0.25 ; taille_vox = 0.5
+*** Resolution du disque de projection :  52x52
+FF.cpp: stat_NFF(): file .\diag_kojxfr73 open for writing
+####>> Nb Erreurs dues a active_face et infini = 2191307
+>>> Canestra[main] FF et Bfar calcules  en 5.108 cpu seconds (0' 5'') 
+==>Bi=E+Bfar
+ MGCR-HD : seuil de cvgence = 1e-006 - nb_iter_max = 1000
+ MGCR CONVERGE en 5 iteration(s) 
+>>> Canestra[main] Resolution du SL par MGCR en 0.133 cpu seconds (0' 0'') 
+==> Impression des resultats radim=4334, nbcell=0
+This is the end...
+
+ferrlog stream close() called.

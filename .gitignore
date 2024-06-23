@@ -2,3 +2,5 @@ fspm-wheat/example/Scenarios_monoculms/Run-tmp/
 fspm-wheat/example/Scenarios_monoculms/Run-tmp/*
 **/*.PNG
 **/*.txt
+**/*.csv
+**/*.xlsx

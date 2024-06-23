@@ -1220,10 +1220,12 @@ class PhotosyntheticOrganElement(object):
     PARAMETERS = parameters.PHOTOSYNTHETIC_ORGAN_ELEMENT_PARAMETERS  #: the internal parameters of the photosynthetic organs elements
     INIT_COMPARTMENTS = parameters.PHOTOSYNTHETIC_ORGAN_ELEMENT_INIT_COMPARTMENTS  #: the initial values of compartments and state parameters
 
+   ################################# 2024/6/21 zhao: also add An for output ##################################################################################
     def __init__(self, label=None, green_area=INIT_COMPARTMENTS.green_area, mstruct=INIT_COMPARTMENTS.mstruct, senesced_mstruct=INIT_COMPARTMENTS.senesced_mstruct, Nstruct=INIT_COMPARTMENTS.Nstruct,
                  triosesP=INIT_COMPARTMENTS.triosesP, starch=INIT_COMPARTMENTS.starch, sucrose=INIT_COMPARTMENTS.sucrose, fructan=INIT_COMPARTMENTS.fructan,
                  nitrates=INIT_COMPARTMENTS.nitrates, amino_acids=INIT_COMPARTMENTS.amino_acids, proteins=INIT_COMPARTMENTS.proteins, cytokinins=INIT_COMPARTMENTS.cytokinins,
-                 Tr=INIT_COMPARTMENTS.Tr, Ag=INIT_COMPARTMENTS.Ag, Ts=INIT_COMPARTMENTS.Ts, is_growing=INIT_COMPARTMENTS.is_growing, cohorts=None, cohorts_replications=None, index=None,):
+                 Tr=INIT_COMPARTMENTS.Tr, Ag=INIT_COMPARTMENTS.Ag, An=INIT_COMPARTMENTS.An, Ts=INIT_COMPARTMENTS.Ts, is_growing=INIT_COMPARTMENTS.is_growing, cohorts=None, cohorts_replications=None, index=None,):
+    ###########################################################################################################################################################             
 
         self.label = label  #: the label of the element
         if cohorts is None:  #: list of cohort values - Hack to treat tillering cases : TEMPORARY. Devrait être porté à l'échelle de la plante uniquement mais je ne vois pas comment faire mieux
@@ -1246,6 +1248,9 @@ class PhotosyntheticOrganElement(object):
         self.Tr = Tr  #: Transpiration rate (mmol m-2 s-1)
         self.Ag = Ag  #: Gross assimilation (µmol` m-2 s-1)
         self.Ts = Ts  #: Organ temperature (°C)
+        ###################### 2024/6/21 zhao: also add An for output ##############################
+        self.An = An
+        ############################################################################################
 
         # state variables
         self.triosesP = triosesP  #: µmol` C

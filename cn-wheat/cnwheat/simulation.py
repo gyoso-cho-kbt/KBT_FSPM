@@ -275,7 +275,10 @@ class Simulation(object):
     #: concatenation of :attr:`T_INDEX` and :attr:`ELEMENTS_INDEXES`
     ELEMENTS_T_INDEXES = T_INDEX + ELEMENTS_INDEXES
     #: the parameters which define the state of the modeled system at element scale
-    ELEMENTS_STATE_PARAMETERS = ['Ag', 'Nstruct', 'Tr', 'Ts', 'green_area', 'is_growing', 'mstruct', 'senesced_mstruct']
+    #################### 2024/6/21 zhao: also add 'An' to the output #################################################
+    # ELEMENTS_STATE_PARAMETERS = ['Ag', 'Nstruct', 'Tr', 'Ts', 'green_area', 'is_growing', 'mstruct', 'senesced_mstruct']
+    ELEMENTS_STATE_PARAMETERS = ['Ag', 'An', 'Nstruct', 'Tr', 'Ts', 'green_area', 'is_growing', 'mstruct', 'senesced_mstruct']
+    ###################################################################################################################
     #: the variables which define the state of the modeled system at element scale,
     #: formed be the concatenation of :attr:`ELEMENTS_STATE_PARAMETERS` and the names
     #: of the compartments associated to each element (see :attr:`MODEL_COMPARTMENTS_NAMES`)

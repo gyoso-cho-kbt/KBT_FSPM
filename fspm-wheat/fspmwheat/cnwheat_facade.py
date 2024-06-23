@@ -10,6 +10,8 @@ from fspmwheat import tools
 import numpy as np
 import math
 
+import sys,os
+
 """
     fspmwheat.cnwheat_facade
     ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -104,7 +106,9 @@ class CNWheatFacade(object):
 
         self.population, self.soils = cnwheat_converter.from_dataframes(model_organs_inputs_df, model_hiddenzones_inputs_df, model_elements_inputs_df, model_soils_inputs_df)
 
-        self._update_parameters = update_parameters
+        ########## 2024/6/19 zhao: set the '_update_parameters' as a dict when 'update_parameters' is None ##
+        self._update_parameters = update_parameters if update_parameters else {}
+        #####################################################################################################
 
         self._simulation.initialize(self.population, self.soils)
 
@@ -132,7 +136,6 @@ class CNWheatFacade(object):
         :param dict [str, float] tillers_replications: a dictionary with tiller id as key, and weight of replication as value.
         :param bool update_shared_df: if 'True', update the shared dataframes at this time step.
         """
-
         self._initialize_model(Tair=Tair, Tsoil=Tsoil, tillers_replications=tillers_replications) # construct classes from MTG
         self._simulation.run()
         self._update_shared_MTG()
@@ -210,7 +213,6 @@ class CNWheatFacade(object):
         :param float Tsoil: soil temperature (°C)
         :param dict [str, float] tillers_replications: a dictionary with tiller id as key, and weight of replication as value.
         """
-
         # Convert number of replications per tiller into number of replications per cohort
         cohorts_replications = {}
         if tillers_replications is not None:
