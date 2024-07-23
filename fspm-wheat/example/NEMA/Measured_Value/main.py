@@ -504,11 +504,12 @@ def main(stop_time, run_simu=True, make_graphs=True):
                                                              # },
                                      # }                           
         update_cnwheat_parameters = {
-            # 'roots': {'K_AMINO_ACIDS_EXPORT': 2.5E-4, 'K_NITRATE_EXPORT': 1E-6, },   #{'K_AMINO_ACIDS_EXPORT': 25*3E-5, 'K_NITRATE_EXPORT': 25*1E-6}
+            # 'roots': {'K_AMINO_ACIDS_EXPORT': 7.5E-4, 'K_NITRATE_EXPORT': 25*1E-6, },   #{'K_AMINO_ACIDS_EXPORT': 25*3E-5, 'K_NITRATE_EXPORT': 25*1E-6}
             ########### 2024/06/15 calibrated ######################################
             'grains': {'FILLING_INIT': 15*24*3600, 'FILLING_END':(15*24+1050)*3600, 'VMAX_STARCH': 10, },
-            'roots': {'K_AMINO_ACIDS_EXPORT': 2.5E-4, 'K_NITRATE_EXPORT': 1E-6, },  # 'K_AMINO_ACIDS_EXPORT': 1.5E-4, 'K_NITRATE_EXPORT': 1E-6, 
+            'roots': {'K_AMINO_ACIDS_EXPORT': 2.5E-5, 'K_NITRATE_EXPORT': 1E-7, },  # 'K_AMINO_ACIDS_EXPORT': 1.5E-4, 'K_NITRATE_EXPORT': 1E-6, 
             #######################################################################
+            'PhotosyntheticOrgan': {'SIGMA_SUCROSE': 1e-03, 'SIGMA_AMINO_ACIDS':1e-08, 'VMAX_SUCROSE':12},
             }
 
         cnwheat_facade_ = cnwheat_facade.CNWheatFacade(g,
@@ -529,17 +530,8 @@ def main(stop_time, run_simu=True, make_graphs=True):
         # forced_max_protein_elements = {(1, 'MS', 9, 'blade', 'LeafElement1'), (1, 'MS', 10, 'blade', 'LeafElement1'), (1, 'MS', 11, 'blade', 'LeafElement1'), (2, 'MS', 9, 'blade', 'LeafElement1'),
                                        # (2, 'MS', 10, 'blade', 'LeafElement1'), (2, 'MS', 11, 'blade', 'LeafElement1')}
         # zhao: also add internode to senesce. The default behavior is to update the max_proteins according to the proteins in the first run of program, but the listed element here will use the input value as it is.                      
-        forced_max_protein_elements = {(1, 'MS', 9, 'blade', 'LeafElement1'), (1, 'MS', 10, 'blade', 'LeafElement1'), (1, 'MS', 11, 'blade', 'LeafElement1')}#, (1, 'MS', 14, 'ear', 'StemElement')}
-        # g.property('max_proteins')[209] = 10 # force set the ear stemElement, and lower it to keep it alive.
-        
-
-        # manually set the 'width' according to the measured values on the element level
-        # g.property('width')[197] = 0.0178    # metamer12 blade (flag leaf)
-        # g.property('width')[167+14] = 0.0174 # metamer11 blade
-        # g.property('width')[151+14] = 0.0166 # metamer10 blade
-        # g.property('width')[135+14] = 0.0142 # metamer9 blade
-        
-        # zhao: the default behavior is to update the max_proteins whenever the actual value is bigger.
+        forced_max_protein_elements = {(1, 'MS', 9, 'blade', 'LeafElement1'), (1, 'MS', 10, 'blade', 'LeafElement1'), (1, 'MS', 11, 'blade', 'LeafElement1')}
+                
         ############ 2024/5/16 calibrated ######################################
         g.property('max_proteins')[167+14] = 0 # the second leaf
         ########################################################################
@@ -551,7 +543,6 @@ def main(stop_time, run_simu=True, make_graphs=True):
         start_time = 960
         stop_time = 2135
         
-       
         # # manually set the interpolation time interval
         # calculate_PARa_by_interploation_df.start_t = 0
         # calculate_PARa_by_interploation_df.ripen_t = 25*24  # the middle ripen time is set as the 25th day.
@@ -580,7 +571,7 @@ def main(stop_time, run_simu=True, make_graphs=True):
         # Viewer.camera.setPosition(position_vector)
         # Viewer.camera.lookAt(Vector3(0,0,0.6))
         # Viewer.frameGL.setBgColor(170,170,170)  # default value is (170,170,170)
-        # canopy_g = adel_wheat.duplicated(g) # zhao: copy the single plant to create a canopy
+        canopy_g = adel_wheat.duplicated(g) # zhao: copy the single plant to create a canopy
         try:
             for t_elongwheat in range(start_time, stop_time, elongwheat_ts):  # Only to compute temperature related variable
                 # run ElongWheat
@@ -781,15 +772,15 @@ def generate_graphs():
                                         graphs_dirpath=GRAPHS_DIRPATH)
                                         
     ################### 2024/6/7 zhao: clean up the output folder after post-processing ####################################
-    # import shutil
-    # try:
-        # shutil.rmtree(OUTPUTS_DIRPATH)
-    # except Exception as ex:
-        # exc_type, exc_obj, exc_tb = sys.exc_info()
-        # fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        # template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-        # message = template.format(type(ex).__name__, ex.args)
-        # print(message, fname, exc_tb.tb_lineno)
+    import shutil
+    try:
+        shutil.rmtree(OUTPUTS_DIRPATH)
+    except Exception as ex:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+        message = template.format(type(ex).__name__, ex.args)
+        print(message, fname, exc_tb.tb_lineno)
 
     #
     # x_name = 't'

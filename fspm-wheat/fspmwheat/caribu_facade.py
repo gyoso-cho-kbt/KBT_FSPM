@@ -98,13 +98,10 @@ class CaribuFacade(object):
                                                                                        plant_density,
                                                                                        inter_row)
         outputs = {}
-        ########## 2024/6/13 zhao: try to add sensors ##################
-        # sensors = {0: [  [(-0.2,-0.2,0.4), (0.1,0.3,0.4), (-0.23,0.2,0.4)], ] } # zhao: assume only one triangle.
-        #################################################################
         if run_caribu:
             #: Diffuse light
             if sun_sky_option == 'sky':
-                raw, aggregated_sky = c_scene_sky.run(direct=False, infinite=True)  # zhao: change the "direct" parameter to False so that the mean flow within the canopy will be computed.
+                raw, aggregated_sky = c_scene_sky.run(direct=True, infinite=True)
                 # zhao: try the sail calculation for distant radiation. (i.e. the mixed_radiosity algorithm)
                 # raw, aggregated_sky = c_scene_sky.run(direct=False, infinite=True)
                 
@@ -121,14 +118,13 @@ class CaribuFacade(object):
 
             #: Direct light
             elif sun_sky_option == 'sun':
-                raw, aggregated_sun = c_scene_sun.run(direct=True, infinite=True)#, sensors=sensors)
-                # ####### zhao: check sensor output ##############
-                # print('sensor output: {}'.format(raw['par']['sensors']))
-                # ################################################
+                raw, aggregated_sun = c_scene_sun.run(direct=True, infinite=True)
+                
                 Erel_sun = aggregated_sun['par']['Eabs']  #: Erel is the relative surfacic absorbed energy per organ
                 PARa_sun = {k: v * energy for k, v in Erel_sun.items()}
                 Erel_output = Erel_sun
                 PARa_output = PARa_sun
+
                 # Primitive scale
                 if prim_scale:
                     Erel_prim = raw['par']['Eabs']  # zhao: in this case, the 'Erel_prim' will be in the shape {element_id: [triangle1_value, triangle2_value, ...]}
@@ -138,10 +134,10 @@ class CaribuFacade(object):
             #: Mix sky-Sun
             elif sun_sky_option == 'mix':
                 #: Diffuse
-                raw_sky, aggregated_sky = c_scene_sky.run(direct=False, infinite=True)  # zhao: change the "direct" parameter to False so that the mean flow within the canopy will be computed.
+                raw_sky, aggregated_sky = c_scene_sky.run(direct=True, infinite=True)
                 Erel_sky = aggregated_sky['par']['Eabs']
                 #: Direct
-                raw_sun, aggregated_sun = c_scene_sun.run(direct=False, infinite=True)
+                raw_sun, aggregated_sun = c_scene_sun.run(direct=True, infinite=True)
                 Erel_sun = aggregated_sun['par']['Eabs']
 
                 #: Spitters's model estimating for the diffuse:direct ratio
@@ -229,8 +225,8 @@ class CaribuFacade(object):
 
             #: Generates CaribuScenes
             if not heterogeneous_canopy:  # TODO: adapt the domain to plant_density
-                c_scene_sky = CaribuScene(scene=self._shared_mtg, light=sky, pattern=self._geometrical_model.domain, opt=opt, soil_mesh=1, debug=True, soil_reflectance={'par':1})
-                c_scene_sun = CaribuScene(scene=self._shared_mtg, light=sun, pattern=self._geometrical_model.domain, opt=opt, soil_mesh=1, debug=True, soil_reflectance={'par':1})
+                c_scene_sky = CaribuScene(scene=self._shared_mtg, light=sky, pattern=self._geometrical_model.domain, opt=opt)
+                c_scene_sun = CaribuScene(scene=self._shared_mtg, light=sun, pattern=self._geometrical_model.domain, opt=opt)
                 ############### added by zhao ###########################
                 self._c_scene_sky = c_scene_sky
                 self._c_scene_sun = c_scene_sun

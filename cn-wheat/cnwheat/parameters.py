@@ -436,9 +436,6 @@ class PhotosyntheticOrganElementInitCompartments(object):
         self.Tr = 0              #: initial value of Tr (Transpiration rate (mmol m-2 s-1)
         self.Ts = 12             #: initial value of Ts (Organ temperature)
         self.Ag = 0              #: initial value of Ag (Gross assimilation (:math:`\mu` mol m-2 s-1)
-        ################# 2024/6/21 zhao: also add An for output ###############################################
-        self.An = 0
-        ########################################################################################################
 
 
 #: The instance of class :class:`cnwheat.parameters.PhotosyntheticOrganElementInitCompartments` for current process
